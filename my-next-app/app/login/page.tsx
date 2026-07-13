@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Gem, User, Lock, Eye, EyeOff, Loader2, ShieldCheck } from "lucide-react";
 import { useDispatch } from "react-redux";
@@ -10,7 +10,12 @@ import { loginAction } from "@/Redux/Action/action";
 export default function LoginPage() {
   const router = useRouter();
   const dispatch = useDispatch<any>();
-
+useEffect(() => {
+  fetch("https://darkcyan-kudu-235344.hostingersite.com/api/health-check")
+    .then(res => res.json())
+    .then(data => console.log(data))
+    .catch(err => console.log(err));
+}, []);
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
