@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import DashboardLayout from "@/component/Layout/DashboardLayout";
 import StoreProvider from "@/component/Layout/StoreProvider";
-
+import LayoutWrapper from "@/component/Layout/LayoutWrapper";
 
 export const metadata: Metadata = {
   title: "Gold Manager",
@@ -18,9 +17,9 @@ export default function RootLayout({
     <html lang="en">
       <body>
         <StoreProvider>
-          <DashboardLayout>
+          <LayoutWrapper>
             {children}
-          </DashboardLayout>
+          </LayoutWrapper>
         </StoreProvider>
       </body>
     </html>
