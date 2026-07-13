@@ -4,7 +4,7 @@ import axios, {
 } from "axios";
 
 export const http = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://darkcyan-kudu-235344.hostingersite.com:5000",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://darkcyan-kudu-235344.hostingersite.com",
   headers: {
     "Content-Type": "application/json",
   },
