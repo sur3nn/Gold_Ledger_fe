@@ -32,8 +32,6 @@ export default function DashboardStats({
         gradient="from-blue-50 to-white"
         iconBg="bg-blue-500"
         icon={<TrendingDown className="w-4 h-4 text-white" />}
-        trend="down"
-        trendColor="text-blue-500"
       />
       <StatCard
         label="Total"
@@ -44,7 +42,6 @@ export default function DashboardStats({
         gradient="from-emerald-50 to-white"
         iconBg="bg-emerald-500"
         icon={<TrendingUp className="w-4 h-4 text-white" />}
-        trendColor="text-emerald-500"
       />
     
       <StatCard
@@ -55,8 +52,6 @@ export default function DashboardStats({
         gradient="from-amber-50 to-white"
         iconBg="bg-amber-500"
         icon={<Package className="w-4 h-4 text-white" />}
-        trend="down"
-        trendColor="text-amber-500"
       />
       <StatCard
         label="Credit Balance"
@@ -66,8 +61,6 @@ export default function DashboardStats({
         gradient="from-violet-50 to-white"
         iconBg="bg-violet-500"
         icon={<Scale className="w-4 h-4 text-white" />}
-        trend="up"
-        trendColor="text-violet-500"
       />
       <StatCard
         label="Factory"
@@ -78,8 +71,6 @@ export default function DashboardStats({
         gradient="from-rose-50 to-white"
         iconBg="bg-rose-500"
         icon={<CreditCard className="w-4 h-4 text-white" />}
-        trend="down"
-        trendColor="text-rose-500"
       />
     </div>
   );

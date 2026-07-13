@@ -6,12 +6,11 @@ interface StatCardProps {
   label: string;
   sublabel?: string;
   value: string | number;
-  icon: ReactNode; // main icon rendered inside the colored square
-  iconBg: string; // solid tailwind bg color classes for the icon square, e.g. "bg-blue-500"
-  trendIcon: ReactNode; // small badge icon top-right (bring your own color class)
-  gradient: string; // tailwind gradient classes for the card background (used as fallback)
+  icon: ReactNode;
+  iconBg: string;
+  gradient: string;
   loading?: boolean;
-  prefix?: string; // e.g. "₹"
+  prefix?: string;
 }
 
 // Richer, more saturated background themes keyed off the icon square's color,
