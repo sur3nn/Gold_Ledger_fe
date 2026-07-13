@@ -1,24 +1,16 @@
 "use client";
 
-import { Download, TrendingUp } from "lucide-react";
-import { EmptyState, ErrorState, SkeletonRow } from "./shared";
+import { Download, TrendingUp, Eye } from "lucide-react";
+import { useState } from "react";
+import { EmptyState, ErrorState, SkeletonRow, HEADER_COLORS } from "./shared";
+import ProductDetailsModal from "./ProductDetailsModal";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getSalesReport } from "@/Redux/Action/action";
+import { getSalesReportTab } from "@/Redux/Action/action";
 
-export interface SaleRecord {
-  id: number | string;
-  date: string;
-  customer: string;
-  weight: string;
-  amount: string;
-  payment: string;
-  historyLog: string;
-}
-
-export interface SalesData {
-  totalSalesAmount: string;
-  records: SaleRecord[];
+interface SalesTabProps {
+  fromDate: string; // "YYYY-MM-DD" or ""
+  toDate: string;
 }
 
 const PAYMENT_COLORS: Record<string, string> = {
@@ -27,38 +19,43 @@ const PAYMENT_COLORS: Record<string, string> = {
   "Bank Transfer": "bg-purple-50 text-purple-600 border border-purple-100",
 };
 
-export default function SalesTab() {
-  const mockSalesData = {
-    totalSalesAmount: "₹2,38,500",
-    records: [
-      { id: 1, date: "01-06-2026", customer: "ABC Jewellers", weight: "10.500 g", amount: "₹52,500", payment: "Cash", historyLog: "Sale #S-1001" },
-      { id: 2, date: "04-06-2026", customer: "XYZ Retail", weight: "8.250 g", amount: "₹41,250", payment: "UPI", historyLog: "Sale #S-1002" },
-      { id: 3, date: "08-06-2026", customer: "ABC Jewellers", weight: "14.000 g", amount: "₹70,000", payment: "Bank Transfer", historyLog: "Sale #S-1003" },
-      { id: 4, date: "13-06-2026", customer: "Prestige Ornaments", weight: "6.750 g", amount: "₹33,750", payment: "Cash", historyLog: "Sale #S-1004" },
-      { id: 5, date: "20-06-2026", customer: "XYZ Retail", weight: "8.200 g", amount: "₹41,000", payment: "UPI", historyLog: "Sale #S-1005" },
-    ],
-  };
+function formatCash(value: number) {
+  return `₹${Number(value ?? 0).toLocaleString("en-IN")}`;
+}
 
+export default function SalesTab({ fromDate, toDate }: SalesTabProps) {
   const dispatch = useDispatch();
-  const { salesReportData, salesReportLoad } = useSelector((state: any) => state.purchase);
-  useEffect(() => { dispatch(getSalesReport()); }, [dispatch]);
+  const { salesReportData, salesReportLoad, salesReportError } = useSelector(
+    (state: any) => state.purchase
+  );
 
-  const records = mockSalesData.records ?? [];
+  useEffect(() => {
+    dispatch(getSalesReportTab({ fromDate, toDate }) as any);
+  }, [dispatch, fromDate, toDate]);
+
+  const records = salesReportData?.records ?? [];
+  const totalSalesAmount = salesReportData?.totalSalesAmount ?? 0;
+
+  const [selectedRow, setSelectedRow] = useState<any | null>(null);
+
+  const COLS = ["Date", "Customer", "Weight", "Amount", "Payment", "Ref", "Product Details"];
 
   return (
-    <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white">
+    <div className="border border-violet-100/70 rounded-2xl overflow-hidden bg-white shadow-sm">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-4 gap-3 bg-gradient-to-r from-green-50/60 to-white border-b border-gray-50">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between px-4 sm:px-6 py-4 gap-3 bg-gradient-to-r from-teal-50/70 via-violet-50/40 to-white border-b border-gray-50">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center">
-            <TrendingUp className="w-4 h-4 text-green-600" />
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-emerald-500 flex items-center justify-center shadow-sm">
+            <TrendingUp className="w-4 h-4 text-white" />
           </div>
           <div>
             <h2 className="text-sm font-bold text-gray-800">Sales Register</h2>
-            <p className="text-[10px] text-gray-400">Current period transactions</p>
+            <p className="text-[10px] text-gray-400">
+              {fromDate && toDate ? `${fromDate} to ${toDate}` : "Current period transactions"}
+            </p>
           </div>
         </div>
-        <button className="flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-800 text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors w-full sm:w-auto">
+        <button className="flex items-center justify-center gap-2 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl transition-all w-full sm:w-auto shadow-sm shadow-purple-200">
           <Download className="w-3.5 h-3.5" />
           Export CSV
         </button>
@@ -67,54 +64,77 @@ export default function SalesTab() {
       {/* Stat Banner */}
       <div className="px-4 sm:px-6 py-4 border-b border-gray-50 flex flex-col sm:flex-row sm:items-end gap-1">
         <div>
-          <p className="text-[10px] font-semibold text-green-600 uppercase tracking-[0.15em] mb-1">
+          <p className="text-[10px] font-bold text-violet-500 uppercase tracking-[0.15em] mb-1">
             Total Sales Amount
           </p>
           {salesReportLoad ? (
-            <div className="h-9 w-28 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="h-9 w-28 bg-violet-50 rounded-lg animate-pulse" />
           ) : (
-            <p className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
-              {salesReportData?.totalSalesAmount ?? "₹2,38,500"}
+            <p className="text-2xl sm:text-3xl font-bold text-violet-700 tracking-tight">
+              {formatCash(totalSalesAmount)}
             </p>
           )}
         </div>
-        <span className="sm:ml-3 mb-1 text-[10px] font-semibold text-green-500 bg-green-50 px-2 py-0.5 rounded-full border border-green-100 w-fit">
-          ↑ 12.4% vs last period
-        </span>
       </div>
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="w-full text-xs sm:text-sm min-w-[560px]">
+        <table className="w-full text-xs sm:text-sm min-w-[680px]">
           <thead>
-            <tr className="border-b border-gray-50 bg-gray-50/40">
-              {["Date", "Customer", "Weight", "Amount", "Payment", "Ref"].map((h) => (
-                <th key={h} className="text-left px-4 sm:px-5 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-[0.12em]">
+            <tr className="border-b border-gray-50 bg-violet-50/30">
+              {COLS.map((h, i) => (
+                <th
+                  key={h}
+                  className={`text-left px-4 sm:px-5 py-3 text-[10px] font-bold uppercase tracking-[0.12em] ${HEADER_COLORS[i % HEADER_COLORS.length]}`}
+                >
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {salesReportLoad && Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cols={6} />)}
-            {!salesReportLoad && records.length === 0 && <EmptyState />}
-            {!salesReportLoad && records.map((r: any, idx: number) => (
-              <tr key={r.id} className={`border-b border-gray-50 hover:bg-amber-50/30 transition-colors ${idx % 2 === 0 ? "" : "bg-gray-50/20"}`}>
+            {salesReportLoad && Array.from({ length: 4 }).map((_, i) => <SkeletonRow key={i} cols={7} />)}
+            {!salesReportLoad && salesReportError && <ErrorState message={salesReportError} colSpan={7} />}
+            {!salesReportLoad && !salesReportError && records.length === 0 && (
+              <EmptyState colSpan={7} label="Sales records will appear here once transactions are created." />
+            )}
+            {!salesReportLoad && !salesReportError && records.map((r: any, idx: number) => (
+              <tr key={r.id} className={`border-b border-gray-50 hover:bg-violet-50/30 transition-colors ${idx % 2 === 0 ? "" : "bg-gray-50/20"}`}>
                 <td className="px-4 sm:px-5 py-3.5 text-gray-400 font-medium tabular-nums">{r.date}</td>
                 <td className="px-4 sm:px-5 py-3.5 text-gray-800 font-semibold">{r.customer}</td>
-                <td className="px-4 sm:px-5 py-3.5 text-gray-600 tabular-nums">{r.weight}</td>
-                <td className="px-4 sm:px-5 py-3.5 text-gray-900 font-bold tabular-nums">{r.amount}</td>
+                <td className="px-4 sm:px-5 py-3.5 text-gray-600 tabular-nums">{Number(r.weight).toFixed(3)} g</td>
+                <td className="px-4 sm:px-5 py-3.5 text-violet-700 font-bold tabular-nums">{formatCash(r.amount)}</td>
                 <td className="px-4 sm:px-5 py-3.5">
                   <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${PAYMENT_COLORS[r.payment] ?? "bg-gray-100 text-gray-500"}`}>
-                    {r.payment}
+                    {r.payment ?? "—"}
                   </span>
                 </td>
                 <td className="px-4 sm:px-5 py-3.5 text-gray-400 font-mono text-[10px] sm:text-xs">{r.historyLog}</td>
+                <td className="px-4 sm:px-5 py-3.5">
+                  <button
+                    onClick={() => setSelectedRow(r)}
+                    disabled={!r.products?.length}
+                    className="flex items-center gap-1.5 text-[11px] font-semibold text-fuchsia-600 bg-fuchsia-50 hover:bg-fuchsia-100 disabled:opacity-40 disabled:cursor-not-allowed px-2.5 py-1.5 rounded-lg transition-colors"
+                  >
+                    <Eye size={12} />
+                    View{r.products?.length ? ` (${r.products.length})` : ""}
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      <ProductDetailsModal
+        open={!!selectedRow}
+        onClose={() => setSelectedRow(null)}
+        billRef={selectedRow?.historyLog ?? ""}
+        partyLabel={selectedRow?.customer ?? ""}
+        date={selectedRow?.date ?? ""}
+        totalAmount={selectedRow?.amount ?? 0}
+        products={selectedRow?.products ?? []}
+      />
     </div>
   );
 }

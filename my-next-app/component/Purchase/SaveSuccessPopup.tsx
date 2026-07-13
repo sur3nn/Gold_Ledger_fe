@@ -135,7 +135,7 @@ const SaveSuccessPopup = ({
               <div
                 className="h-full rounded-full"
                 style={{
-                  background: "linear-gradient(90deg, #6c3ff5, #a855f7)",
+                  background: "linear-gradient(90deg, #c026d3, #7c3aed)",
                   animation: "loadBar 1.6s ease-in-out infinite",
                   width: "60%",
                 }}
@@ -200,22 +200,22 @@ const SaveSuccessPopup = ({
                   onClick={onNewPurchase}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-white text-[14px] font-bold transition-opacity hover:opacity-90"
                   style={{
-                    background: "linear-gradient(90deg, #6c3ff5 0%, #4f46e5 100%)",
-                    boxShadow: "0 4px 16px rgba(108,63,245,0.3)",
+                    background: "linear-gradient(90deg, #c026d3 0%, #7c3aed 50%, #4f46e5 100%)",
+                    boxShadow: "0 4px 16px rgba(124,58,237,0.35)",
                   }}
                 >
                   New Purchase
                   <ArrowRight size={15} />
                 </button>
 
-                <button
+                {/* <button
                   type="button"
                   onClick={onClose}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-gray-600 text-[14px] font-semibold bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   <Printer size={15} />
                   Print Bill
-                </button>
+                </button> */}
               </div>
             </div>
           </>

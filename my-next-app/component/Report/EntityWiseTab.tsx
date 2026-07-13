@@ -1,24 +1,23 @@
 "use client";
 
-import { getSalesReport } from "@/Redux/Action/action";
-import { Users, Factory } from "lucide-react";
+import { getEntityWiseReport } from "@/Redux/Action/action";
+import { Users, Factory, AlertCircle, Crown } from "lucide-react";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
-export interface EntitySummaryItem {
+interface EntityRow {
   id: number | string;
   name: string;
   transactions: number;
-  amount: string;
-  goldQty: string;
+  amount: number;
+  gold_qty: number;
 }
 
-export interface EntityWiseData {
-  shopOwners: EntitySummaryItem[];
-  factories: EntitySummaryItem[];
+function formatCash(value: number) {
+  return `₹${Number(value ?? 0).toLocaleString("en-IN")}`;
 }
 
-function EntityCard({ item, index }: { item: EntitySummaryItem; index: number }) {
+function EntityCard({ item, index, isTop }: { item: EntityRow; index: number; isTop: boolean }) {
   const initials = item.name
     .split(" ")
     .map((w: string) => w[0])
@@ -26,16 +25,26 @@ function EntityCard({ item, index }: { item: EntitySummaryItem; index: number })
     .join("");
 
   const avatarColors = [
-    "bg-amber-100 text-amber-700",
-    "bg-indigo-100 text-indigo-700",
+    "bg-violet-100 text-violet-700",
+    "bg-blue-100 text-blue-700",
     "bg-green-100 text-green-700",
     "bg-rose-100 text-rose-700",
-    "bg-violet-100 text-violet-700",
+    "bg-amber-100 text-amber-700",
   ];
   const avatarColor = avatarColors[index % avatarColors.length];
 
   return (
-    <div className="bg-white border border-gray-100 rounded-xl px-4 py-3.5 hover:border-amber-100 hover:shadow-sm transition-all group">
+    <div
+      className={`bg-white border rounded-xl px-4 py-3.5 hover:shadow-sm transition-all group relative ${
+        isTop ? "border-violet-200 ring-1 ring-violet-100" : "border-gray-100 hover:border-violet-100"
+      }`}
+    >
+      {isTop && (
+        <div className="absolute -top-2 right-3 flex items-center gap-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white text-[9px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+          <Crown className="w-2.5 h-2.5" />
+          TOP
+        </div>
+      )}
       <div className="flex items-center gap-3">
         <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold flex-shrink-0 ${avatarColor}`}>
           {initials}
@@ -43,13 +52,13 @@ function EntityCard({ item, index }: { item: EntitySummaryItem; index: number })
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-gray-800 truncate">{item.name}</p>
           <p className="text-[10px] text-gray-400 mt-0.5">
-            {item.transactions} transactions
+            {item.transactions} transaction{item.transactions === 1 ? "" : "s"}
           </p>
         </div>
         <div className="text-right flex-shrink-0">
-          <p className="text-xs font-bold text-gray-900 tabular-nums">{item.amount}</p>
+          <p className="text-xs font-bold text-violet-700 tabular-nums">{formatCash(item.amount)}</p>
           <p className="text-[10px] text-amber-500 font-semibold mt-0.5 tabular-nums">
-            {item.goldQty}g
+            {Number(item.gold_qty ?? 0).toFixed(3)}g
           </p>
         </div>
       </div>
@@ -60,14 +69,14 @@ function EntityCard({ item, index }: { item: EntitySummaryItem; index: number })
 function SkeletonCard() {
   return (
     <div className="bg-white border border-gray-100 rounded-xl px-4 py-3.5 flex items-center gap-3">
-      <div className="w-8 h-8 bg-gray-100 rounded-lg animate-pulse flex-shrink-0" />
+      <div className="w-8 h-8 bg-violet-50 rounded-lg animate-pulse flex-shrink-0" />
       <div className="flex-1 flex flex-col gap-2">
-        <div className="h-3 w-28 bg-gray-100 rounded-full animate-pulse" />
-        <div className="h-2.5 w-20 bg-gray-100 rounded-full animate-pulse" />
+        <div className="h-3 w-28 bg-violet-50 rounded-full animate-pulse" />
+        <div className="h-2.5 w-20 bg-violet-50 rounded-full animate-pulse" />
       </div>
       <div className="flex flex-col gap-2 items-end">
-        <div className="h-3 w-16 bg-gray-100 rounded-full animate-pulse" />
-        <div className="h-2.5 w-12 bg-gray-100 rounded-full animate-pulse" />
+        <div className="h-3 w-16 bg-violet-50 rounded-full animate-pulse" />
+        <div className="h-2.5 w-12 bg-violet-50 rounded-full animate-pulse" />
       </div>
     </div>
   );
@@ -75,47 +84,70 @@ function SkeletonCard() {
 
 function SectionHeader({ icon: Icon, title, color }: { icon: any; title: string; color: string }) {
   return (
-    <div className={`flex items-center gap-2.5 px-5 py-4 border-b border-gray-50`}>
-      <div className={`w-7 h-7 rounded-lg flex items-center justify-center ${color}`}>
-        <Icon className="w-3.5 h-3.5" />
+    <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-50">
+      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ${color}`}>
+        <Icon className="w-3.5 h-3.5 text-white" />
       </div>
       <h2 className="text-sm font-bold text-gray-800">{title}</h2>
     </div>
   );
 }
 
-export default function EntityWiseTab() {
-  const mockEntityWiseData = {
-    shopOwners: [
-      { id: 1, name: "ABC Jewellers", transactions: 12, amount: "₹1,22,500", goldQty: "24.500" },
-      { id: 2, name: "XYZ Retail", transactions: 8, amount: "₹82,250", goldQty: "16.450" },
-    ],
-    factories: [
-      { id: 1, name: "Primary Gold Factory", transactions: 15, amount: "₹1,54,750", goldQty: "31.000" },
-      { id: 2, name: "Modern Casting Unit", transactions: 9, amount: "₹96,000", goldQty: "20.000" },
-      { id: 3, name: "Prestige Ornaments", transactions: 6, amount: "₹38,250", goldQty: "7.500" },
-      { id: 4, name: "Royal Gold Works", transactions: 4, amount: "₹26,000", goldQty: "5.000" },
-    ],
-  };
+function EmptyState({ label }: { label: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-10">
+      <p className="text-sm text-gray-400">{label}</p>
+    </div>
+  );
+}
 
+function ErrorState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-2 py-10">
+      <AlertCircle className="w-5 h-5 text-red-400" />
+      <p className="text-sm text-red-400">{message}</p>
+    </div>
+  );
+}
+
+export default function EntityWiseTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
   const dispatch = useDispatch();
-  const { salesReportData, salesReportLoad } = useSelector((state: any) => state.purchase);
-  useEffect(() => { dispatch(getSalesReport()); }, [dispatch]);
+  const {
+    entityWiseShopOwners,
+    entityWiseFactories,
+    entityWiseLoad,
+    entityWiseError,
+  } = useSelector((state: any) => state.purchase);
 
-  const shopOwners = mockEntityWiseData?.shopOwners ?? [];
-  const factories = mockEntityWiseData?.factories ?? [];
+  useEffect(() => {
+    dispatch(getEntityWiseReport({ fromDate, toDate }) as any);
+  }, [dispatch, fromDate, toDate]);
+
+  const shopOwners: EntityRow[] = entityWiseShopOwners ?? [];
+  const factories: EntityRow[] = entityWiseFactories ?? [];
+
+  const topOwnerId = shopOwners.length > 0 ? shopOwners[0].id : null; // already sorted by amount DESC from API
+  const topFactoryId = factories.length > 0 ? factories[0].id : null;
 
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
       {/* Shop Owners */}
-      <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white">
-        <SectionHeader icon={Users} title="Shop Owner Summary" color="bg-orange-100 text-orange-600" />
+      <div className="border border-violet-100/70 rounded-2xl overflow-hidden bg-white shadow-sm">
+        <SectionHeader icon={Users} title="Shop Owner Summary" color="bg-gradient-to-br from-orange-400 to-amber-500" />
         <div className="px-4 pb-4 pt-3 flex flex-col gap-2">
-          {salesReportLoad
-            ? Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)
-            : shopOwners.map((item: any, idx: number) => <EntityCard key={item.id} item={item} index={idx} />)}
+          {entityWiseLoad && Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)}
+
+          {!entityWiseLoad && entityWiseError && <ErrorState message={entityWiseError} />}
+
+          {!entityWiseLoad && !entityWiseError && shopOwners.length === 0 && (
+            <EmptyState label="No shop owner transactions yet" />
+          )}
+
+          {!entityWiseLoad && !entityWiseError && shopOwners.map((item, idx) => (
+            <EntityCard key={item.id} item={item} index={idx} isTop={item.id === topOwnerId} />
+          ))}
         </div>
-        {!salesReportLoad && (
+        {!entityWiseLoad && !entityWiseError && shopOwners.length > 0 && (
           <div className="mx-4 mb-4 p-3 bg-orange-50/50 rounded-xl border border-orange-100/50">
             <div className="flex justify-between text-[10px]">
               <span className="text-gray-400 font-medium">Total shops</span>
@@ -124,7 +156,7 @@ export default function EntityWiseTab() {
             <div className="flex justify-between text-[10px] mt-1">
               <span className="text-gray-400 font-medium">Combined transactions</span>
               <span className="text-gray-700 font-bold">
-                {shopOwners.reduce((s: number, o: any) => s + o.transactions, 0)}
+                {shopOwners.reduce((s, o) => s + Number(o.transactions ?? 0), 0)}
               </span>
             </div>
           </div>
@@ -132,14 +164,22 @@ export default function EntityWiseTab() {
       </div>
 
       {/* Factories */}
-      <div className="border border-gray-100 rounded-2xl overflow-hidden bg-white">
-        <SectionHeader icon={Factory} title="Factory Summary" color="bg-indigo-100 text-indigo-600" />
+      <div className="border border-violet-100/70 rounded-2xl overflow-hidden bg-white shadow-sm">
+        <SectionHeader icon={Factory} title="Factory Summary" color="bg-gradient-to-br from-blue-400 to-indigo-500" />
         <div className="px-4 pb-4 pt-3 flex flex-col gap-2">
-          {salesReportLoad
-            ? Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
-            : factories.map((item: any, idx: number) => <EntityCard key={item.id} item={item} index={idx} />)}
+          {entityWiseLoad && Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
+
+          {!entityWiseLoad && entityWiseError && <ErrorState message={entityWiseError} />}
+
+          {!entityWiseLoad && !entityWiseError && factories.length === 0 && (
+            <EmptyState label="No factory transactions yet" />
+          )}
+
+          {!entityWiseLoad && !entityWiseError && factories.map((item, idx) => (
+            <EntityCard key={item.id} item={item} index={idx} isTop={item.id === topFactoryId} />
+          ))}
         </div>
-        {!salesReportLoad && (
+        {!entityWiseLoad && !entityWiseError && factories.length > 0 && (
           <div className="mx-4 mb-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
             <div className="flex justify-between text-[10px]">
               <span className="text-gray-400 font-medium">Total factories</span>
@@ -148,7 +188,7 @@ export default function EntityWiseTab() {
             <div className="flex justify-between text-[10px] mt-1">
               <span className="text-gray-400 font-medium">Combined transactions</span>
               <span className="text-gray-700 font-bold">
-                {factories.reduce((s: number, f: any) => s + f.transactions, 0)}
+                {factories.reduce((s, f) => s + Number(f.transactions ?? 0), 0)}
               </span>
             </div>
           </div>

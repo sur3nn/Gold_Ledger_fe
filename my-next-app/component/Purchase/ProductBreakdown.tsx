@@ -1,8 +1,8 @@
 "use client";
-import { useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   Plus, Trash2, CheckCircle2, Package,
-  ChevronDown, ChevronUp, AlertCircle,
+  ChevronDown, ChevronUp, AlertCircle, Check, Loader2,
 } from "lucide-react";
 
 // ── Gold Coin SVG ─────────────────────────────────────────────────────────────
@@ -62,6 +62,7 @@ export interface Product {
   grossWeightBefore: number;
   grossWeightAfter: number;
   factoryWeight: number;
+  figureWeight: number,
   netWeight: number;
   amount: number;
   done: boolean;
@@ -73,8 +74,12 @@ export interface ProductBreakdownProps {
   products: Product[];
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   metals: Metal[];
+  metalsLoading?: boolean;
+  metalSearch: string;
+  setMetalSearch: React.Dispatch<React.SetStateAction<string>>;
   // keys of invalid product ids passed from parent on save attempt
   invalidProductIds?: Set<number>;
+  paymentMethod: string;
 }
 
 const inputClass = `h-10 w-full border border-gray-200 rounded-xl px-3 text-[13px] font-medium text-gray-700 bg-white outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100/80 transition-all placeholder:text-gray-300`;
@@ -86,18 +91,128 @@ const FieldLabel = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{children}</p>
 );
 
+// ── Searchable Metal Dropdown (per-row, factory-style) ─────────────────────────
+const MetalDropdown = ({
+  value,
+  onChange,
+  metals,
+  metalsLoading,
+  metalSearch,
+  setMetalSearch,
+}: {
+  value: number;
+  onChange: (id: number) => void;
+  metals: Metal[];
+  metalsLoading?: boolean;
+  metalSearch: string;
+  setMetalSearch: React.Dispatch<React.SetStateAction<string>>;
+}) => {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const selected = metals.find((m) => m.id === value) ?? null;
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+        // reset local search text back to selected label on close
+        setMetalSearch("");
+      }
+    };
+    if (open) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open, setMetalSearch]);
+
+  return (
+    <div ref={ref} className="relative">
+      <div
+        className={`flex items-center h-10 border rounded-xl px-3 gap-1.5 bg-white cursor-text transition-all border-gray-200 focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100/80`}
+        onClick={() => {
+          setOpen(true);
+          inputRef.current?.focus();
+        }}
+      >
+        <input
+          ref={inputRef}
+          type="text"
+          value={open ? metalSearch : (selected?.name ?? "")}
+          placeholder="Search metal…"
+          className="flex-1 outline-none text-[13px] font-medium text-gray-700 bg-transparent placeholder:text-gray-300 min-w-0"
+          onFocus={() => setOpen(true)}
+          onChange={(e) => setMetalSearch(e.target.value)}
+        />
+        {metalsLoading ? (
+          <Loader2 size={13} className="text-gray-300 animate-spin flex-shrink-0" />
+        ) : (
+          <ChevronDown
+            size={13}
+            className={`text-gray-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          />
+        )}
+      </div>
+
+      {open && (
+  <div
+    className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] overflow-hidden"
+    style={{ maxHeight: 200, overflowY: "auto" }}
+  >
+          {metalsLoading && (
+            <p className="px-3 py-2.5 text-[12px] text-gray-300 flex items-center gap-2">
+              <Loader2 size={11} className="animate-spin" />
+              Searching…
+            </p>
+          )}
+          {!metalsLoading && metals.length === 0 && (
+            <p className="px-3 py-2.5 text-[12px] text-gray-300">No metals found</p>
+          )}
+          {!metalsLoading &&
+            metals.map((m, i) => (
+              <button
+                key={m.id}
+                type="button"
+                onClick={() => {
+                  onChange(m.id);
+                  setMetalSearch("");
+                  setOpen(false);
+                }}
+                className={`w-full px-3 py-2.5 text-left text-[12.5px] font-medium flex items-center justify-between gap-2 transition-colors capitalize
+                  ${value === m.id
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "text-gray-700 hover:bg-indigo-50/60 hover:text-indigo-600"}
+                  ${i !== 0 ? "border-t border-gray-50" : ""}
+                `}
+              >
+                {m.name}
+                {value === m.id && <Check size={12} className="text-indigo-500" />}
+              </button>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 // ── Component ─────────────────────────────────────────────────────────────────
 const ProductBreakdown = ({
   products,
   setProducts,
   metals,
+  metalsLoading = false,
+  metalSearch,
+  setMetalSearch,
   invalidProductIds = new Set(),
+  paymentMethod
 }: ProductBreakdownProps) => {
   // Single expanded id — only one open at a time
+  const amountOnly = paymentMethod === "2";
   const [expandedId, setExpandedId] = useState<number | null>(
     products[0]?.id ?? null   // first product open by default
   );
+const figureWeights = [2, 4, 6, 8, 10, 12];
 
+const [figureOpen, setFigureOpen] = useState<number | null>(null);
   const toggleExpand = (id: number) =>
     setExpandedId((prev) => (prev === id ? null : id));
 
@@ -133,6 +248,7 @@ const ProductBreakdown = ({
         netWeight: 0,
         amount: 0,
         done: false,
+        figureWeight: 0,
       },
     ]);
     setExpandedId(newId); // always open the newly added one
@@ -141,12 +257,12 @@ const ProductBreakdown = ({
   const totalAmount = products.reduce((s, p) => s + p.amount, 0);
 
   return (
-    <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm">
+    <div className="bg-white rounded-3xl  border border-gray-100 shadow-sm">
 
       {/* Header */}
       <div
         className="px-5 sm:px-8 py-5 sm:py-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-gray-100"
-        style={{ background: "linear-gradient(110deg, #fdf8f0 0%, #ffffff 50%, #f5f3ff 100%)" }}
+        style={{ background: "linear-gradient(110deg, #fef3c7 0%, #ffd9ec 50%, #e6ddff 100%)" }}
       >
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-orange-400 flex items-center justify-center shadow-sm shadow-orange-200 flex-shrink-0">
@@ -164,7 +280,7 @@ const ProductBreakdown = ({
         <button
           type="button"
           onClick={addProduct}
-          className="flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-indigo-200/60 active:scale-[0.98] w-full sm:w-auto"
+          className="flex items-center justify-center gap-2 bg-gradient-to-r from-fuchsia-600 via-purple-600 to-indigo-600 hover:opacity-90 text-white text-[13px] font-semibold px-5 py-2.5 rounded-xl transition-all shadow-md shadow-purple-200/60 active:scale-[0.98] w-full sm:w-auto"
         >
           <Plus size={14} />
           Add Product
@@ -289,17 +405,69 @@ const ProductBreakdown = ({
                         <FieldLabel>Qty</FieldLabel>
                         <StepperBadge value={p.quantity} onChange={(v) => updateProduct(p.id, "quantity", v)} />
                       </div>
+<div className="relative">
+  <FieldLabel>Figure Wt.</FieldLabel>
 
-                      {/* Metal */}
+  <button
+    type="button"
+    onClick={() =>
+      setFigureOpen(figureOpen === p.id ? null : p.id)
+    }
+    className="h-10 w-full border border-gray-200 rounded-xl px-3 bg-white flex items-center justify-between text-[13px] font-medium text-gray-700 hover:border-indigo-300 transition-all"
+  >
+    <span>{p.figureWeight} gm</span>
+
+    <ChevronDown
+      size={14}
+      className={`transition-transform ${
+        figureOpen === p.id ? "rotate-180" : ""
+      }`}
+    />
+  </button>
+
+  {figureOpen === p.id && (
+    <div
+      className="absolute left-0 right-0 mt-1 bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden z-50"
+    >
+      {figureWeights.map((weight, index) => (
+        <button
+          key={weight}
+          type="button"
+          onClick={() => {
+            updateProduct(p.id, "figureWeight", weight);
+            setFigureOpen(null);
+          }}
+          className={`w-full px-4 py-3 flex items-center justify-between text-left text-[13px] font-medium transition-colors
+            ${
+              p.figureWeight === weight
+                ? "bg-indigo-50 text-indigo-600"
+                : "hover:bg-gray-50 text-gray-700"
+            }
+            ${index !== 0 ? "border-t border-gray-100" : ""}
+          `}
+        >
+          <span>{weight} gm</span>
+
+          {p.figureWeight === weight && (
+            <Check size={15} className="text-indigo-500" />
+          )}
+        </button>
+      ))}
+    </div>
+  )}
+</div>
+
+                      {/* Metal — searchable dropdown */}
                       <div>
                         <FieldLabel>Metal</FieldLabel>
-                        <select
+                        <MetalDropdown
                           value={p.metalId}
-                          onChange={(e) => updateProduct(p.id, "metalId", Number(e.target.value))}
-                          className={inputClass}
-                        >
-                          {metals.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                        </select>
+                          onChange={(id) => updateProduct(p.id, "metalId", id)}
+                          metals={metals}
+                          metalsLoading={metalsLoading}
+                          metalSearch={metalSearch}
+                          setMetalSearch={setMetalSearch}
+                        />
                       </div>
 
                       {/* Product Name — back inside, wider */}
@@ -345,16 +513,22 @@ const ProductBreakdown = ({
                       </div>
 
                       {/* Amount */}
-                      <div>
-                        <FieldLabel>Amount {hasAmountError && <span className="text-red-400 normal-case">*</span>}</FieldLabel>
-                        <input
-                          type="number"
-                          value={p.amount || ""}
-                          placeholder="0.00"
-                          onChange={(e) => updateProduct(p.id, "amount", Number(e.target.value))}
-                          className={hasAmountError ? amtInputErrorClass : amtInputClass}
-                        />
-                      </div>
+                      {amountOnly && (
+  <div>
+    <FieldLabel>
+      Amount {hasAmountError && <span className="text-red-400">*</span>}
+    </FieldLabel>
+    <input
+      type="number"
+      value={p.amount || ""}
+      placeholder="0.00"
+      onChange={(e) =>
+        updateProduct(p.id, "amount", Number(e.target.value))
+      }
+      className={hasAmountError ? amtInputErrorClass : amtInputClass}
+    />
+  </div>
+)}
                     </div>
                   </div>
                 )}
@@ -366,7 +540,7 @@ const ProductBreakdown = ({
 
       {/* Footer summary */}
       {products.length > 1 && (
-        <div className="px-5 sm:px-8 py-4 border-t border-gray-100 bg-gradient-to-r from-gray-50/80 to-indigo-50/30 flex items-center justify-between gap-3 flex-wrap">
+        <div className="px-5 sm:px-8 py-4 border-t border-gray-100 bg-gradient-to-r from-violet-50/70 to-fuchsia-50/50 flex items-center justify-between gap-3 flex-wrap">
           <p className="text-[12px] text-gray-400 font-semibold">{products.length} products total</p>
           <div className="flex items-center gap-2">
             <span className="text-[11px] text-gray-400 font-medium">Grand Total</span>

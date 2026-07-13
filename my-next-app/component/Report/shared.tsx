@@ -1,44 +1,58 @@
-import { ClipboardX, AlertCircle } from "lucide-react";
+"use client";
 
-export function EmptyState() {
-  return (
-    <tr>
-      <td colSpan={10} className="py-16 text-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 rounded-xl border border-dashed border-amber-200 flex items-center justify-center bg-amber-50/50">
-            <ClipboardX className="w-4 h-4 text-amber-300" />
-          </div>
-          <p className="text-xs text-gray-400 tracking-wide">No records found for this period</p>
-        </div>
-      </td>
-    </tr>
-  );
-}
+import { AlertCircle, FileSearch } from "lucide-react";
 
-export function ErrorState({ message }: { message: string }) {
-  return (
-    <tr>
-      <td colSpan={10} className="py-14 text-center">
-        <div className="flex flex-col items-center gap-2">
-          <AlertCircle className="w-5 h-5 text-red-300" />
-          <p className="text-xs text-red-400">{message}</p>
-        </div>
-      </td>
-    </tr>
-  );
-}
+// Cycled accent colors for table header labels (matches the report theme)
+export const HEADER_COLORS = [
+  "text-blue-500",
+  "text-green-500",
+  "text-orange-500",
+  "text-violet-500",
+  "text-pink-500",
+  "text-gray-400",
+  "text-fuchsia-500",
+];
 
 export function SkeletonRow({ cols }: { cols: number }) {
   return (
-    <tr className="border-b border-gray-50/80">
+    <tr className="border-b border-gray-50">
       {Array.from({ length: cols }).map((_, i) => (
-        <td key={i} className="px-4 py-3.5">
+        <td key={i} className="px-4 sm:px-5 py-3.5">
           <div
-            className="h-3 bg-gradient-to-r from-gray-100 to-gray-50 rounded-full animate-pulse"
+            className="h-3 bg-violet-50 rounded-full animate-pulse"
             style={{ width: `${50 + (i % 3) * 18}%` }}
           />
         </td>
       ))}
+    </tr>
+  );
+}
+
+export function EmptyState({ colSpan = 6, label = "No records found" }: { colSpan?: number; label?: string }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="py-14 text-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-14 h-14 rounded-2xl bg-violet-50 flex items-center justify-center">
+            <FileSearch className="w-6 h-6 text-violet-300" />
+          </div>
+          <p className="text-sm font-bold text-gray-700">No Records</p>
+          <p className="text-xs text-gray-400">{label}</p>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+export function ErrorState({ colSpan = 6, message }: { colSpan?: number; message: string }) {
+  return (
+    <tr>
+      <td colSpan={colSpan} className="py-12 text-center">
+        <div className="flex flex-col items-center gap-2">
+          <AlertCircle className="w-5 h-5 text-red-400" />
+          <p className="text-sm text-red-400">{message}</p>
+        </div>
+      </td>
     </tr>
   );
 }

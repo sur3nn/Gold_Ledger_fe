@@ -3,37 +3,38 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-const http = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL ?? "http://10.174.13.215:5000",
+export const http = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://darkcyan-kudu-235344.hostingersite.com:5000",
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// http.interceptors.request.use(
-//   (config: InternalAxiosRequestConfig) => {
-//     const token =
-//       typeof window !== "undefined"
-//         ? localStorage.getItem("token")
-//         : null;
+http.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("token");
 
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
 
-//     return config;
-//   }
-// );
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 http.interceptors.response.use(
   (response) => response,
   (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      console.warn("Unauthorized - redirecting to login");
+    if (typeof window !== "undefined") {
+      if (error.response?.status === 401) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+      }
     }
 
     return Promise.reject(error);
   }
 );
-
-export { http };
