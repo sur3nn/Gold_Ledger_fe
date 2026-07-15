@@ -5,6 +5,8 @@ import { Users, Factory, AlertCircle, Crown } from "lucide-react";
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
+export type EntityMode = "factory" | "retailer";
+
 interface EntityRow {
   id: number | string;
   name: string;
@@ -82,20 +84,33 @@ function SkeletonCard() {
   );
 }
 
-function SectionHeader({ icon: Icon, title, color }: { icon: any; title: string; color: string }) {
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+  color,
+}: {
+  icon: any;
+  title: string;
+  subtitle: string;
+  color: string;
+}) {
   return (
-    <div className="flex items-center gap-2.5 px-5 py-4 border-b border-gray-50">
-      <div className={`w-8 h-8 rounded-xl flex items-center justify-center shadow-sm ${color}`}>
-        <Icon className="w-3.5 h-3.5 text-white" />
+    <div className="flex items-center gap-3 px-5 sm:px-6 py-4 border-b border-gray-50">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0 ${color}`}>
+        <Icon className="w-4 h-4 text-white" />
       </div>
-      <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+      <div>
+        <h2 className="text-sm font-bold text-gray-800">{title}</h2>
+        <p className="text-[10px] text-gray-400">{subtitle}</p>
+      </div>
     </div>
   );
 }
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-10">
+    <div className="col-span-full flex flex-col items-center justify-center gap-2 py-12">
       <p className="text-sm text-gray-400">{label}</p>
     </div>
   );
@@ -103,14 +118,22 @@ function EmptyState({ label }: { label: string }) {
 
 function ErrorState({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-2 py-10">
+    <div className="col-span-full flex flex-col items-center justify-center gap-2 py-12">
       <AlertCircle className="w-5 h-5 text-red-400" />
       <p className="text-sm text-red-400">{message}</p>
     </div>
   );
 }
 
-export default function EntityWiseTab({ fromDate, toDate }: { fromDate: string; toDate: string }) {
+export default function EntityWiseTab({
+  fromDate,
+  toDate,
+  mode,
+}: {
+  fromDate: string;
+  toDate: string;
+  mode: EntityMode;
+}) {
   const dispatch = useDispatch();
   const {
     entityWiseShopOwners,
@@ -119,81 +142,73 @@ export default function EntityWiseTab({ fromDate, toDate }: { fromDate: string; 
     entityWiseError,
   } = useSelector((state: any) => state.purchase);
 
+  const isFactory = mode === "factory";
+
   useEffect(() => {
-    dispatch(getEntityWiseReport({ fromDate, toDate }) as any);
-  }, [dispatch, fromDate, toDate]);
+    dispatch(
+      getEntityWiseReport({ fromDate, toDate, typeId: isFactory ? 1 : 2 }) as any
+    );
+  }, [dispatch, fromDate, toDate, isFactory]);
 
-  const shopOwners: EntityRow[] = entityWiseShopOwners ?? [];
-  const factories: EntityRow[] = entityWiseFactories ?? [];
+  const rows: EntityRow[] = (isFactory ? entityWiseFactories : entityWiseShopOwners) ?? [];
+  const topId = rows.length > 0 ? rows[0].id : null; // already sorted by amount DESC from API
 
-  const topOwnerId = shopOwners.length > 0 ? shopOwners[0].id : null; // already sorted by amount DESC from API
-  const topFactoryId = factories.length > 0 ? factories[0].id : null;
+  const theme = isFactory
+    ? {
+        icon: Factory,
+        color: "bg-gradient-to-br from-blue-400 to-indigo-500",
+        title: "Factory Summary",
+        subtitle: "Performance by manufacturing partner",
+        tint: "bg-indigo-50/50 border-indigo-100/50",
+        emptyLabel: "No factory transactions yet",
+      }
+    : {
+        icon: Users,
+        color: "bg-gradient-to-br from-orange-400 to-amber-500",
+        title: "Shop Owner Summary",
+        subtitle: "Performance by retail partner",
+        tint: "bg-orange-50/50 border-orange-100/50",
+        emptyLabel: "No shop owner transactions yet",
+      };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {/* Shop Owners */}
-      <div className="border border-violet-100/70 rounded-2xl overflow-hidden bg-white shadow-sm">
-        <SectionHeader icon={Users} title="Shop Owner Summary" color="bg-gradient-to-br from-orange-400 to-amber-500" />
-        <div className="px-4 pb-4 pt-3 flex flex-col gap-2">
-          {entityWiseLoad && Array.from({ length: 2 }).map((_, i) => <SkeletonCard key={i} />)}
+    <div className="border border-violet-100/70 rounded-2xl overflow-hidden bg-white shadow-sm">
+      <SectionHeader icon={theme.icon} title={theme.title} subtitle={theme.subtitle} color={theme.color} />
 
-          {!entityWiseLoad && entityWiseError && <ErrorState message={entityWiseError} />}
+      <div className="px-5 sm:px-6 pb-5 pt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        {entityWiseLoad && Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
 
-          {!entityWiseLoad && !entityWiseError && shopOwners.length === 0 && (
-            <EmptyState label="No shop owner transactions yet" />
-          )}
+        {!entityWiseLoad && entityWiseError && <ErrorState message={entityWiseError} />}
 
-          {!entityWiseLoad && !entityWiseError && shopOwners.map((item, idx) => (
-            <EntityCard key={item.id} item={item} index={idx} isTop={item.id === topOwnerId} />
-          ))}
-        </div>
-        {!entityWiseLoad && !entityWiseError && shopOwners.length > 0 && (
-          <div className="mx-4 mb-4 p-3 bg-orange-50/50 rounded-xl border border-orange-100/50">
-            <div className="flex justify-between text-[10px]">
-              <span className="text-gray-400 font-medium">Total shops</span>
-              <span className="text-gray-700 font-bold">{shopOwners.length}</span>
-            </div>
-            <div className="flex justify-between text-[10px] mt-1">
-              <span className="text-gray-400 font-medium">Combined transactions</span>
-              <span className="text-gray-700 font-bold">
-                {shopOwners.reduce((s, o) => s + Number(o.transactions ?? 0), 0)}
-              </span>
-            </div>
-          </div>
+        {!entityWiseLoad && !entityWiseError && rows.length === 0 && (
+          <EmptyState label={theme.emptyLabel} />
         )}
+
+        {!entityWiseLoad &&
+          !entityWiseError &&
+          rows.map((item, idx) => (
+            <EntityCard key={item.id} item={item} index={idx} isTop={item.id === topId} />
+          ))}
       </div>
 
-      {/* Factories */}
-      <div className="border border-violet-100/70 rounded-2xl overflow-hidden bg-white shadow-sm">
-        <SectionHeader icon={Factory} title="Factory Summary" color="bg-gradient-to-br from-blue-400 to-indigo-500" />
-        <div className="px-4 pb-4 pt-3 flex flex-col gap-2">
-          {entityWiseLoad && Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)}
-
-          {!entityWiseLoad && entityWiseError && <ErrorState message={entityWiseError} />}
-
-          {!entityWiseLoad && !entityWiseError && factories.length === 0 && (
-            <EmptyState label="No factory transactions yet" />
-          )}
-
-          {!entityWiseLoad && !entityWiseError && factories.map((item, idx) => (
-            <EntityCard key={item.id} item={item} index={idx} isTop={item.id === topFactoryId} />
-          ))}
-        </div>
-        {!entityWiseLoad && !entityWiseError && factories.length > 0 && (
-          <div className="mx-4 mb-4 p-3 bg-indigo-50/50 rounded-xl border border-indigo-100/50">
-            <div className="flex justify-between text-[10px]">
-              <span className="text-gray-400 font-medium">Total factories</span>
-              <span className="text-gray-700 font-bold">{factories.length}</span>
-            </div>
-            <div className="flex justify-between text-[10px] mt-1">
-              <span className="text-gray-400 font-medium">Combined transactions</span>
-              <span className="text-gray-700 font-bold">
-                {factories.reduce((s, f) => s + Number(f.transactions ?? 0), 0)}
-              </span>
-            </div>
+      {!entityWiseLoad && !entityWiseError && rows.length > 0 && (
+        <div className={`mx-5 sm:mx-6 mb-5 p-4 rounded-xl border flex items-center justify-between gap-4 ${theme.tint}`}>
+          <div>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">
+              Total {isFactory ? "Factories" : "Shops"}
+            </p>
+            <p className="text-lg font-bold text-gray-800 mt-0.5">{rows.length}</p>
           </div>
-        )}
-      </div>
+          <div className="text-right">
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">
+              Combined Transactions
+            </p>
+            <p className="text-lg font-bold text-gray-800 mt-0.5">
+              {rows.reduce((s, o) => s + Number(o.transactions ?? 0), 0)}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

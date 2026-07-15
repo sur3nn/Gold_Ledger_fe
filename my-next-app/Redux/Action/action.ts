@@ -118,9 +118,20 @@ export const getPurchaseReport = createAsyncThunk(
   }
 );
  
+// export const getOutstandingReport = createAsyncThunk(
+//   "purchase/getOutstandingReport",
+//   async (payload: { fromDate?: string; toDate?: string } = {}, thunkAPI) => {
+//     try {
+//       return await axiosFile.outstandingReport(payload);
+//     } catch (err: any) {
+//       return thunkAPI.rejectWithValue(err?.response?.data?.error || "Failed to fetch outstanding report");
+//     }
+//   }
+// );
+
 export const getOutstandingReport = createAsyncThunk(
   "purchase/getOutstandingReport",
-  async (payload: { fromDate?: string; toDate?: string } = {}, thunkAPI) => {
+  async (payload: { fromDate?: string; toDate?: string; typeId?: number } = {}, thunkAPI) => {
     try {
       return await axiosFile.outstandingReport(payload);
     } catch (err: any) {
@@ -129,9 +140,20 @@ export const getOutstandingReport = createAsyncThunk(
   }
 );
  
+// export const getEntityWiseReport = createAsyncThunk(
+//   "purchase/getEntityWiseReport",
+//   async (payload: { fromDate?: string; toDate?: string } = {}, thunkAPI) => {
+//     try {
+//       return await axiosFile.entityWiseReport(payload);
+//     } catch (err: any) {
+//       return thunkAPI.rejectWithValue(err?.response?.data?.error || "Failed to fetch entity-wise report");
+//     }
+//   }
+// );
+
 export const getEntityWiseReport = createAsyncThunk(
   "purchase/getEntityWiseReport",
-  async (payload: { fromDate?: string; toDate?: string } = {}, thunkAPI) => {
+  async (payload: { fromDate?: string; toDate?: string; typeId?: number } = {}, thunkAPI) => {
     try {
       return await axiosFile.entityWiseReport(payload);
     } catch (err: any) {
