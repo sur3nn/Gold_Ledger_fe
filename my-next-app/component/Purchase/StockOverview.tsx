@@ -8,7 +8,7 @@ interface StockOverviewProps {
     total_net_weight?: string | number;
     total_gold_given?: string | number;
     total_amount?: string | number;
-    Total_amount_given?: string | number;
+    total_amount_given?: string | number;
   } | null;
   loading: boolean;
 }
@@ -18,18 +18,24 @@ type Tab = "weight" | "payments";
 const StockOverview = ({ data, loading }: StockOverviewProps) => {
   const [tab, setTab] = useState<Tab>("weight");
 
-  const totalNetWeight = Number(data?.total_net_weight ?? 0);
-  const totalGoldGiven = Number(data?.total_gold_given ?? 0);
-  const totalAmount = Number(data?.total_amount ?? 0);
-  const totalAmountGiven = Number(data?.Total_amount_given ?? 0);
+const totalNetWeight = Number(data?.total_net_weight ?? 0);
+const totalGoldGiven = Number(data?.total_gold_given ?? 0);
+const totalAmount = Number(data?.total_amount ?? 0);
+const totalAmountGiven = Number(data?.total_amount_given ?? 0);
 
-  const weightBalance = totalGoldGiven - totalNetWeight;
-  const amountBalance = totalAmountGiven - totalAmount;
+const weightBalance =
+  Math.round((totalGoldGiven - totalNetWeight) * 1000) / 1000;
 
-  const formatRupee = (val: number) =>
-    `${val < 0 ? "-" : "+"}₹${Math.abs(val).toLocaleString("en-IN")}`;
+const amountBalance =
+  Math.round((totalAmountGiven - totalAmount) * 100) / 100;
 
-  const formatRupeePlain = (val: number) => `₹${val.toLocaleString("en-IN")}`;
+const formatRupee = (val: number) => {
+  const rounded = Math.round(val * 100) / 100;
+  return `₹${rounded.toLocaleString("en-IN", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
 
   return (
     <div
@@ -58,11 +64,10 @@ const StockOverview = ({ data, loading }: StockOverviewProps) => {
         <button
           type="button"
           onClick={() => setTab("weight")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${
-            tab === "weight"
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${tab === "weight"
               ? "bg-white text-indigo-800 shadow-sm"
               : "text-white/60 hover:text-white/90"
-          }`}
+            }`}
         >
           <Scale size={12} />
           Weight
@@ -70,11 +75,10 @@ const StockOverview = ({ data, loading }: StockOverviewProps) => {
         <button
           type="button"
           onClick={() => setTab("payments")}
-          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${
-            tab === "payments"
+          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-[12px] font-bold transition-all ${tab === "payments"
               ? "bg-white text-indigo-800 shadow-sm"
               : "text-white/60 hover:text-white/90"
-          }`}
+            }`}
         >
           <Banknote size={12} />
           Payments
@@ -100,19 +104,33 @@ const StockOverview = ({ data, loading }: StockOverviewProps) => {
           </div>
 
           <div className="rounded-2xl bg-white/10 backdrop-blur-sm px-3.5 py-3 flex items-center justify-between gap-2 border border-white/10">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-8 h-8 rounded-lg bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
-                <Coins size={13} className="text-emerald-300" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[11px] text-white/70 leading-tight truncate">Credit Balance</p>
-                <p className="text-[9.5px] text-white/40 leading-tight truncate">Given to factory</p>
-              </div>
-            </div>
-            <p className="text-[20px] font-bold leading-none text-emerald-300 tabular-nums flex-shrink-0">
-              {loading ? "..." : `${weightBalance >= 0 ? "+" : ""}${weightBalance.toFixed(0)}g`}
-            </p>
-          </div>
+  <div className="flex items-center gap-2 min-w-0">
+    <span className="w-8 h-8 rounded-lg bg-emerald-400/20 flex items-center justify-center flex-shrink-0">
+      <Coins size={13} className="text-emerald-300" />
+    </span>
+    <div className="min-w-0 flex flex-col gap-1">
+      <span
+        className={`inline-flex items-center w-fit gap-1 text-[9.5px] font-bold leading-none px-2 py-1 rounded-full ${
+          weightBalance >= 0
+            ? "bg-emerald-400/25 text-emerald-300"
+            : "bg-rose-400/25 text-rose-300"
+        }`}
+      >
+        {weightBalance >= 0 ? "CREDIT BALANCE" : "EXCESS WEIGHT"}
+      </span>
+      <p className="text-[9.5px] text-white/40 leading-tight truncate pl-0.5">
+        {weightBalance >= 0 ? "Given to factory" : "Taken from factory"}
+      </p>
+    </div>
+  </div>
+  <p
+    className={`text-[20px] font-bold leading-none tabular-nums flex-shrink-0 ${
+      weightBalance >= 0 ? "text-emerald-300" : "text-rose-300"
+    }`}
+  >
+    {loading ? "..." : `${weightBalance}g`}
+  </p>
+</div>
         </div>
       )}
 
@@ -123,37 +141,45 @@ const StockOverview = ({ data, loading }: StockOverviewProps) => {
             <div className="rounded-xl bg-white/10 px-3 py-2.5 min-w-0">
               <p className="text-[9.5px] text-white/60 leading-tight truncate">Product Amt.</p>
               <p className="text-[13px] font-bold text-pink-300 truncate">
-                {loading ? "..." : formatRupeePlain(totalAmount)}
+                {loading ? "..." : formatRupee (totalAmount)}
               </p>
             </div>
             <div className="rounded-xl bg-white/10 px-3 py-2.5 min-w-0">
               <p className="text-[9.5px] text-white/60 leading-tight truncate">Amt. Given</p>
               <p className="text-[13px] font-bold text-white truncate">
-                {loading ? "..." : formatRupeePlain(totalAmountGiven)}
+                {loading ? "..." : formatRupee (totalAmountGiven)}
               </p>
             </div>
           </div>
 
           <div className="rounded-2xl bg-white/10 backdrop-blur-sm px-3.5 py-3 flex items-center justify-between gap-2 border border-white/10">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="w-8 h-8 rounded-lg bg-amber-400/20 flex items-center justify-center flex-shrink-0">
-                <Wallet size={13} className="text-amber-300" />
-              </span>
-              <div className="min-w-0">
-                <p className="text-[11px] text-white/70 leading-tight truncate">Payment Balance</p>
-                <p className="text-[9.5px] text-white/40 leading-tight truncate">
-                  {amountBalance >= 0 ? "Advance to factory" : "Due to factory"}
-                </p>
-              </div>
-            </div>
-            <p
-              className={`text-[18px] font-bold leading-none tabular-nums flex-shrink-0 ${
-                amountBalance >= 0 ? "text-amber-300" : "text-rose-300"
-              }`}
-            >
-              {loading ? "..." : formatRupee(amountBalance)}
-            </p>
-          </div>
+  <div className="flex items-center gap-2 min-w-0">
+    <span className="w-8 h-8 rounded-lg bg-amber-400/20 flex items-center justify-center flex-shrink-0">
+      <Wallet size={13} className="text-amber-300" />
+    </span>
+    <div className="min-w-0 flex flex-col gap-1">
+      <span
+        className={`inline-flex items-center w-fit gap-1 text-[9.5px] font-bold leading-none px-2 py-1 rounded-full ${
+          amountBalance >= 0
+            ? "bg-amber-400/25 text-amber-300"
+            : "bg-rose-400/25 text-rose-300"
+        }`}
+      >
+        {amountBalance >= 0 ? "PAYMENT BALANCE" : "EXCESS PAYMENT"}
+      </span>
+      <p className="text-[9.5px] text-white/40 leading-tight truncate pl-0.5">
+        {amountBalance >= 0 ? "Advance to factory" : "Due to factory"}
+      </p>
+    </div>
+  </div>
+  <p
+    className={`text-[18px] font-bold leading-none tabular-nums flex-shrink-0 ${
+      amountBalance >= 0 ? "text-amber-300" : "text-rose-300"
+    }`}
+  >
+    {loading ? "..." : formatRupee(amountBalance)}
+  </p>
+</div>
         </div>
       )}
     </div>

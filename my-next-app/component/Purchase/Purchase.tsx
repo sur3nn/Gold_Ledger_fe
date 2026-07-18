@@ -18,6 +18,7 @@ export interface Product {
   quantity: number;
   metalId: number;
   productName: string;
+   category: string; 
   itemCode: string | null;
   purity: number;
   carat: number;
@@ -44,9 +45,7 @@ const Purchase = ({ isSales }: { isSales: boolean }) => {
 const [totalPaymentGiven, setTotalPaymentGiven] = useState<number>(0);
   const [factorySearch, setFactorySearch] = useState("");
   const [metalSearch, setMetalSearch] = useState("");
-  useEffect(() => {
-  dispatch(getStockOverviewAction({ typeId: isSales ? 2 : 1 }));
-}, [isSales, dispatch]);
+
   // initial load
  useEffect(() => {
   if (isSales) {
@@ -116,9 +115,34 @@ const sourceLoading = isSales ? retailerListLoad : factoryListLoad;
   const [factoryName, setFactoryName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("1");
   const [solidGoldGiven, setSolidGoldGiven] = useState<number>(0);
+   const [solidGoldBalance, setSolidGoldBalance] = useState<number>(0);
+   const [totalPaymentBalance,setTotalPaymentBalance] = useState<number>(0);
 
   const metalList = metalListData?.length ? metalListData : [];
 
+useEffect(() => {
+  if(!selectedFactory?.id) return;
+  dispatch(
+    getStockOverviewAction({
+      typeId: isSales ? 2 : 1,
+      factory_retailer_id: selectedFactory?.id,
+    })
+  );
+}, [isSales, selectedFactory, dispatch]);
+useEffect(() => {
+  if (!stockOverviewData) return;
+   const weightBalance =
+  stockOverviewData?.total_gold_given - stockOverviewData?.total_net_weight;
+
+const amountBalance =
+  stockOverviewData?.total_amount_given - stockOverviewData?.total_amount;
+
+const roundedWeightBalance = Math.round(weightBalance * 1000) / 1000; // 3 decimals
+const roundedAmountBalance = Math.round(amountBalance * 100) / 100;   // 2 decimals
+
+setSolidGoldBalance(roundedWeightBalance);
+setTotalPaymentBalance(roundedAmountBalance);
+}, [stockOverviewData]);
 
   const [products, setProducts] = useState<Product[]>([
     {
@@ -126,6 +150,7 @@ const sourceLoading = isSales ? retailerListLoad : factoryListLoad;
       quantity: 1,
       metalId: metalList?.[0]?.id ?? 0,
       productName: "",
+       category: "", 
       itemCode: null,
       purity: 91,
       carat: 22,
@@ -162,13 +187,13 @@ const sourceLoading = isSales ? retailerListLoad : factoryListLoad;
     }
 
     if (isCashPayment) {
-      if (!totalPaymentGiven || totalPaymentGiven <= 0) {
-        errors.totalPayment = "Total payment given is required";
+      if ( totalPaymentGiven < 0) {
+        errors.totalPayment = "Total payment given should not be Negative(-)";
         valid = false;
       }
     } else {
-      if (!solidGoldGiven || solidGoldGiven <= 0) {
-        errors.solidGold = "Solid gold given is required";
+      if (solidGoldGiven < 0) {
+        errors.solidGold = "Solid gold given should not be Negative(-)";
         valid = false;
       }
     }
@@ -219,6 +244,7 @@ const handleSave = async () => {
       quantity: p.quantity,
       metal_id: p.metalId,
       product_name: p.productName,
+      category: p.category, 
       item_code: p.itemCode ?? null,
       purity: p.purity,
       carat: p.carat,
@@ -242,7 +268,12 @@ const handleSave = async () => {
       limit: historyLimit,
       offset: 0,
     }));
-    await dispatch(getStockOverviewAction({ typeId: isSales ? 2 : 1 }));
+   await dispatch(
+  getStockOverviewAction({
+    typeId: isSales ? 2 : 1,
+    factory_retailer_id: selectedFactory?.id,
+  })
+);
   }else {
   toast.error(
     res.payload?.message || "Billing creation failed."
@@ -266,6 +297,7 @@ const handleSave = async () => {
         quantity: 1,
         metalId: metalList?.[0]?.id ?? 0,
         productName: "",
+         category: "", 
         itemCode: null,
         purity: 91,
         carat: 22,
@@ -314,6 +346,8 @@ const handleSave = async () => {
   setSolidGoldGiven={setSolidGoldGiven}
    totalPaymentGiven={totalPaymentGiven}
   setTotalPaymentGiven={setTotalPaymentGiven}
+  solidGoldBalance={solidGoldBalance}
+  totalPaymentBalance={totalPaymentBalance}
   errors={formErrors}
 />
           <StockOverview data={stockOverviewData} loading={stockOverviewLoad} />

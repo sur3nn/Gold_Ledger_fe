@@ -56,6 +56,7 @@ export interface Product {
   quantity: number;
   metalId: number;
   productName: string;
+  category: string;
   itemCode: string | null;
   purity: number;
   carat: number;
@@ -84,7 +85,12 @@ export interface ProductBreakdownProps {
 
 const inputClass = `h-10 w-full border border-gray-200 rounded-xl px-3 text-[13px] font-medium text-gray-700 bg-white outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100/80 transition-all placeholder:text-gray-300`;
 const inputErrorClass = `h-10 w-full border border-red-300 rounded-xl px-3 text-[13px] font-medium text-gray-700 bg-red-50/30 outline-none focus:border-red-400 focus:ring-2 focus:ring-red-100/80 transition-all placeholder:text-red-200 ring-2 ring-red-100`;
-const amtInputClass = `h-10 w-full border border-gray-200 rounded-xl px-3 text-[13px] font-medium text-rose-700 bg-rose-100 outline-none focus:border-rose-300 focus:ring-2 focus:ring-rose-100/80 transition-all placeholder:text-rose-300`;
+
+
+const amtInputClass = `h-10 w-full border border-gray-200 rounded-xl px-3 text-[13px] font-medium text-gray-700 bg-white outline-none focus:border-emerald-300 focus:ring-2 focus:ring-emerald-100/80 transition-all placeholder:text-gray-300`;
+
+const amtInputFilledClass = `h-10 w-full border border-emerald-300 rounded-xl px-3 text-[13px] font-bold text-emerald-700 bg-emerald-50 outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-100 transition-all placeholder:text-gray-300`;
+
 const amtInputErrorClass = `h-10 w-full border border-red-400 rounded-xl px-3 text-[13px] font-medium text-red-700 bg-red-100 outline-none focus:border-red-500 focus:ring-2 focus:ring-red-100 transition-all placeholder:text-red-300 ring-2 ring-red-200`;
 
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
@@ -154,10 +160,10 @@ const MetalDropdown = ({
       </div>
 
       {open && (
-  <div
-    className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] overflow-hidden"
-    style={{ maxHeight: 200, overflowY: "auto" }}
-  >
+        <div
+          className="absolute top-[calc(100%+4px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-[9999] overflow-hidden"
+          style={{ maxHeight: 200, overflowY: "auto" }}
+        >
           {metalsLoading && (
             <p className="px-3 py-2.5 text-[12px] text-gray-300 flex items-center gap-2">
               <Loader2 size={11} className="animate-spin" />
@@ -210,9 +216,21 @@ const ProductBreakdown = ({
   const [expandedId, setExpandedId] = useState<number | null>(
     products[0]?.id ?? null   // first product open by default
   );
-const figureWeights = [2, 4, 6, 8, 10, 12];
+  const figureWeights = [2, 4, 6, 8, 10, 12];
 
-const [figureOpen, setFigureOpen] = useState<number | null>(null);
+  const [figureOpen, setFigureOpen] = useState<number | null>(null);
+  const figureRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (figureRef.current && !figureRef.current.contains(e.target as Node)) {
+        setFigureOpen(null);
+      }
+    };
+    if (figureOpen !== null) {
+      document.addEventListener("mousedown", handler);
+    }
+    return () => document.removeEventListener("mousedown", handler);
+  }, [figureOpen]);
   const toggleExpand = (id: number) =>
     setExpandedId((prev) => (prev === id ? null : id));
 
@@ -239,6 +257,7 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
         quantity: 1,
         metalId: metals?.[0]?.id ?? 0,
         productName: "",
+        category: "",
         itemCode: null,
         purity: 91,
         carat: 22,
@@ -313,6 +332,7 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
             const hasAmountError = isInvalid && !p.amount;
             const hasWeightError = isInvalid && !p.factoryWeight;
             const hasNetWeightError = isInvalid && !p.netWeight;
+            const hasCategoryError = isInvalid && !p.category.trim();
 
             return (
               <div
@@ -321,14 +341,12 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
               >
                 {/* Collapsed row */}
                 <div
-                  className={`px-4 sm:px-8 py-4 flex items-center gap-3 transition-colors ${
-                    isExpanded ? "bg-indigo-50/30" : isInvalid ? "bg-red-50/30 hover:bg-red-50/50" : "hover:bg-gray-50/40"
-                  }`}
+                  className={`px-4 sm:px-8 py-4 flex items-center gap-3 transition-colors ${isExpanded ? "bg-indigo-50/30" : isInvalid ? "bg-red-50/30 hover:bg-red-50/50" : "hover:bg-gray-50/40"
+                    }`}
                 >
                   {/* Index */}
-                  <span className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center border flex-shrink-0 ${
-                    isInvalid ? "bg-red-50 text-red-500 border-red-200" : "bg-indigo-50 text-indigo-500 border-indigo-100"
-                  }`}>
+                  <span className={`w-6 h-6 rounded-full text-[10px] font-bold flex items-center justify-center border flex-shrink-0 ${isInvalid ? "bg-red-50 text-red-500 border-red-200" : "bg-indigo-50 text-indigo-500 border-indigo-100"
+                    }`}>
                     {isInvalid ? <AlertCircle size={11} /> : idx + 1}
                   </span>
 
@@ -344,9 +362,8 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
 
                   {/* Product name — read-only display */}
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[14px] font-semibold truncate ${
-                      p.productName ? "text-gray-700" : hasNameError ? "text-red-400" : "text-gray-300"
-                    }`}>
+                    <p className={`text-[14px] font-semibold truncate ${p.productName ? "text-gray-700" : hasNameError ? "text-red-400" : "text-gray-300"
+                      }`}>
                       {p.productName || (hasNameError ? "⚠ Product name required" : "Product Name")}
                     </p>
                   </div>
@@ -354,9 +371,8 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
                   {/* Amount display */}
                   <div className="flex items-center gap-1.5 flex-shrink-0">
                     <span className="text-[12px] text-gray-400 font-medium">₹</span>
-                    <span className={`text-[14px] font-bold tabular-nums ${
-                      p.amount ? "text-rose-500" : hasAmountError ? "text-red-400" : "text-gray-300"
-                    }`}>
+                    <span className={`text-[14px] font-bold tabular-nums ${p.amount ? "text-rose-500" : hasAmountError ? "text-red-400" : "text-gray-300"
+                      }`}>
                       {p.amount ? p.amount.toLocaleString() : "0.00"}
                     </span>
                   </div>
@@ -365,13 +381,12 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
                   <button
                     type="button"
                     onClick={() => toggleExpand(p.id)}
-                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all border flex-shrink-0 ${
-                      isExpanded
+                    className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all border flex-shrink-0 ${isExpanded
                         ? "bg-indigo-100 text-indigo-600 border-indigo-200"
                         : isInvalid
-                        ? "bg-red-50 text-red-400 border-red-200 hover:bg-red-100"
-                        : "hover:bg-indigo-50 text-gray-400 hover:text-indigo-500 border-transparent hover:border-indigo-100"
-                    }`}
+                          ? "bg-red-50 text-red-400 border-red-200 hover:bg-red-100"
+                          : "hover:bg-indigo-50 text-gray-400 hover:text-indigo-500 border-transparent hover:border-indigo-100"
+                      }`}
                     title={isExpanded ? "Collapse" : "Expand"}
                   >
                     {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -405,57 +420,58 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
                         <FieldLabel>Qty</FieldLabel>
                         <StepperBadge value={p.quantity} onChange={(v) => updateProduct(p.id, "quantity", v)} />
                       </div>
-<div className="relative">
-  <FieldLabel>Figure Wt.</FieldLabel>
-
-  <button
-    type="button"
-    onClick={() =>
-      setFigureOpen(figureOpen === p.id ? null : p.id)
-    }
-    className="h-10 w-full border border-gray-200 rounded-xl px-3 bg-white flex items-center justify-between text-[13px] font-medium text-gray-700 hover:border-indigo-300 transition-all"
-  >
-    <span>{p.figureWeight} gm</span>
-
-    <ChevronDown
-      size={14}
-      className={`transition-transform ${
-        figureOpen === p.id ? "rotate-180" : ""
-      }`}
-    />
-  </button>
-
-  {figureOpen === p.id && (
-    <div
-      className="absolute left-0 right-0 mt-1 bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden z-50"
-    >
-      {figureWeights.map((weight, index) => (
-        <button
-          key={weight}
-          type="button"
-          onClick={() => {
-            updateProduct(p.id, "figureWeight", weight);
-            setFigureOpen(null);
-          }}
-          className={`w-full px-4 py-3 flex items-center justify-between text-left text-[13px] font-medium transition-colors
-            ${
-              p.figureWeight === weight
-                ? "bg-indigo-50 text-indigo-600"
-                : "hover:bg-gray-50 text-gray-700"
-            }
+                      <div className="relative" ref={figureOpen === p.id ? figureRef : null}>
+                        <FieldLabel>Figure Wt.</FieldLabel>
+                        <div
+                          className="flex items-center h-10 border border-gray-200 rounded-xl px-3 gap-1.5 bg-white cursor-text transition-all focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100/80"
+                          onClick={() => setFigureOpen(p.id)}
+                        >
+                          <input
+                            type="number"
+                            value={p.figureWeight || ""}
+                            placeholder="0"
+                            onFocus={() => setFigureOpen(p.id)}
+                            onChange={(e) =>
+                              updateProduct(
+                                p.id,
+                                "figureWeight",
+                                e.target.value === "" ? 0 : Number(e.target.value)
+                              )
+                            }
+                            onWheel={(e) => e.currentTarget.blur()}
+                            className="flex-1 outline-none text-[13px] font-medium text-gray-700 bg-transparent placeholder:text-gray-300 min-w-0"
+                          />
+                          <span className="text-[11px] text-gray-400 flex-shrink-0">gm</span>
+                          <ChevronDown
+                            size={13}
+                            className={`text-gray-400 flex-shrink-0 transition-transform ${figureOpen === p.id ? "rotate-180" : ""}`}
+                          />
+                        </div>
+                        {figureOpen === p.id && (
+                          <div className="absolute left-0 right-0 mt-1 bg-white rounded-2xl border border-gray-200 shadow-2xl overflow-hidden z-50">
+                            {figureWeights.map((weight, index) => (
+                              <button
+                                key={weight}
+                                type="button"
+                                onClick={() => {
+                                  updateProduct(p.id, "figureWeight", weight);
+                                  setFigureOpen(null);
+                                }}
+                                className={`w-full px-4 py-3 flex items-center justify-between text-left text-[13px] font-medium transition-colors
+            ${p.figureWeight === weight ? "bg-indigo-50 text-indigo-600" : "hover:bg-gray-50 text-gray-700"}
             ${index !== 0 ? "border-t border-gray-100" : ""}
           `}
-        >
-          <span>{weight} gm</span>
-
-          {p.figureWeight === weight && (
-            <Check size={15} className="text-indigo-500" />
-          )}
-        </button>
-      ))}
-    </div>
-  )}
-</div>
+                              >
+                                <span>{weight} gm</span>
+                                {p.figureWeight === weight && <Check size={15} className="text-indigo-500" />}
+                              </button>
+                            ))}
+                            <div className="px-4 py-2 border-t border-gray-100">
+                              <p className="text-[10px] text-gray-300 font-medium">Or type a custom value above</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
 
                       {/* Metal — searchable dropdown */}
                       <div>
@@ -481,6 +497,16 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
                           className={hasNameError ? inputErrorClass : inputClass}
                         />
                       </div>
+                      <div>
+                        <FieldLabel>Category {hasCategoryError && <span className="text-red-400 normal-case">*</span>}</FieldLabel>
+                        <input
+                          type="text"
+                          value={p.category}
+                          placeholder="e.g. Ring, Chain, Bangle"
+                          onChange={(e) => updateProduct(p.id, "category", e.target.value)}
+                          className={hasCategoryError ? inputErrorClass : inputClass}
+                        />
+                      </div>
 
                       {/* Gross Weight */}
                       <div>
@@ -490,6 +516,7 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
                           value={p.factoryWeight || ""}
                           placeholder="0.00"
                           onChange={(e) => updateProduct(p.id, "factoryWeight", Number(e.target.value))}
+                           onWheel={(e) => e.currentTarget.blur()} 
                           className={hasWeightError ? inputErrorClass : inputClass}
                         />
                       </div>
@@ -508,12 +535,14 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
                           value={p.netWeight || ""}
                           placeholder="0.00"
                           onChange={(e) => updateProduct(p.id, "netWeight", Number(e.target.value))}
+                           onWheel={(e) => e.currentTarget.blur()} 
                           className={hasNetWeightError ? inputErrorClass : inputClass}
                         />
                       </div>
 
                       {/* Amount */}
-                      {amountOnly && (
+                    {/* Amount */}
+{amountOnly && (
   <div>
     <FieldLabel>
       Amount {hasAmountError && <span className="text-red-400">*</span>}
@@ -525,7 +554,14 @@ const [figureOpen, setFigureOpen] = useState<number | null>(null);
       onChange={(e) =>
         updateProduct(p.id, "amount", Number(e.target.value))
       }
-      className={hasAmountError ? amtInputErrorClass : amtInputClass}
+      onWheel={(e) => e.currentTarget.blur()}
+      className={
+        hasAmountError
+          ? amtInputErrorClass
+          : p.amount
+          ? amtInputFilledClass
+          : amtInputClass
+      }
     />
   </div>
 )}

@@ -12,7 +12,13 @@ import {
   AlertCircle,
   Loader2,
   ClipboardList,
+  Wallet,
+  Banknote,
+  Scale,
+  TrendingUp, 
+  TrendingDown 
 } from "lucide-react";
+
 
 interface FactoryItem {
   id: number;
@@ -47,6 +53,8 @@ interface TransactionCardProps {
   errors?: { factory?: string; payment?: string; solidGold?: string; totalPayment?: string };
   totalPaymentGiven: number;
 setTotalPaymentGiven: React.Dispatch<React.SetStateAction<number>>;
+solidGoldBalance:number;
+totalPaymentBalance:number;
 }
 
 // ── Field wrapper with label + optional error ─────────────────────────────────
@@ -98,7 +106,9 @@ const TransactionCard = ({
   setSolidGoldGiven,
   errors = {},
   setTotalPaymentGiven,
-  totalPaymentGiven
+  totalPaymentGiven,
+  solidGoldBalance,
+  totalPaymentBalance
 
   
 }: TransactionCardProps) => {
@@ -338,69 +348,141 @@ const TransactionCard = ({
             </div>
           </Field>
         </div>
+
 {paymentMethod === "2" ? (
-  <Field
-    label="Total Payment Given"
-    icon={<CreditCard size={11} />}
-    iconColor="bg-emerald-100 text-emerald-600"
-    error={errors.totalPayment}
-  >
-    <div
-      className={`flex items-center h-12 border rounded-2xl bg-white transition-all ${ringError(errors.totalPayment)}`}
-    >
-      <input
-        type="number"
-        value={totalPaymentGiven || ""}
-        onChange={(e) =>
-          setTotalPaymentGiven(
-            e.target.value === "" ? 0 : Number(e.target.value)
-          )
-        }
-        placeholder="0.00"
-        className="flex-1 h-full px-4 outline-none text-[14px] text-gray-700 bg-transparent"
-      />
-    </div>
-  </Field>
-) : (
-  <Field
-    label="Solid Gold Given (g)"
-    icon={<Coins size={11} />}
-    iconColor="bg-amber-100 text-amber-600"
-  >
-    <div
-            className={`flex items-center h-12 border rounded-2xl overflow-hidden bg-white transition-all ${ringError(errors.solidGold)}`}
+  <div className="flex flex-col gap-4">
+    {/* ── Account Payment Balance / Excess ── */}
+    <div className="rounded-2xl bg-gradient-to-r from-violet-50 to-fuchsia-50/50 border border-violet-100 px-4 py-3 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center flex-shrink-0">
+          <Wallet size={14} className="text-violet-600" />
+        </span>
+        <div className="min-w-0 flex flex-col gap-1">
+          <span
+            className={`inline-flex items-center w-fit gap-1 text-[9.5px] font-bold leading-none px-2 py-1 rounded-full ${
+              totalPaymentBalance >= 0
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-rose-100 text-rose-700"
+            }`}
           >
-            <input
-              type="number"
-              value={solidGoldGiven || ""}
-              onChange={(e) =>
-                setSolidGoldGiven(e.target.value === "" ? 0 : Number(e.target.value))
-              }
-              placeholder="0.000"
-              className="flex-1 h-full px-4 outline-none text-[14px] text-gray-700 bg-transparent appearance-none"
-            />
-            {/* Stylish stepper */}
-            <div className="flex flex-col h-full border-l border-gray-100 w-10 flex-shrink-0">
-              <button
-                type="button"
-                onClick={() => setSolidGoldGiven((v) => Number((v + 0.001).toFixed(3)))}
-                className="flex-1 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 transition-colors border-b border-gray-100"
-              >
-                <ChevronUp size={13} strokeWidth={2.5} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setSolidGoldGiven((v) => Math.max(0, Number((v - 0.001).toFixed(3))))}
-                className="flex-1 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 transition-colors"
-              >
-                <ChevronDown size={13} strokeWidth={2.5} />
-              </button>
-            </div>
-          </div>
-  </Field>
-)}
-       
+            {totalPaymentBalance >= 0 ? "PAYMENT BALANCE" : "EXCESS PAYMENT"}
+          </span>
+          <p className="text-[9.5px] text-gray-400 leading-tight truncate pl-0.5">
+            {totalPaymentBalance >= 0 ? "Advance on account" : "Due on account"}
+          </p>
+        </div>
       </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {totalPaymentBalance >= 0 ? (
+          <TrendingUp size={15} className="text-emerald-500" />
+        ) : (
+          <TrendingDown size={15} className="text-rose-500" />
+        )}
+        <p className={`text-[18px] font-bold leading-none tabular-nums ${
+          totalPaymentBalance >= 0 ? "text-emerald-600" : "text-rose-500"
+        }`}>
+          ₹{Math.abs(totalPaymentBalance || 0).toLocaleString("en-IN")}
+        </p>
+      </div>
+    </div>
+
+    {/* ── Total Payment Given — editable input ── */}
+    <Field
+      label="Total Payment Given"
+      icon={<Banknote size={11} />}
+      iconColor="bg-emerald-100 text-emerald-600"
+      error={errors.totalPayment}
+    >
+      <div className={`flex items-center h-12 border rounded-2xl bg-white transition-all ${ringError(errors.totalPayment)}`}>
+        <span className="pl-4 text-[14px] text-gray-400 font-medium">₹</span>
+        <input
+          type="number"
+          value={totalPaymentGiven || ""}
+          onChange={(e) =>
+            setTotalPaymentGiven(e.target.value === "" ? 0 : Number(e.target.value))
+          }
+          placeholder="0.00"
+          onWheel={(e) => e.currentTarget.blur()}
+          className="flex-1 h-full px-2 outline-none text-[14px] text-gray-700 bg-transparent"
+        />
+      </div>
+    </Field>
+  </div>
+) : (
+  <div className="flex flex-col gap-4">
+    {/* ── Account Solid Metal Balance / Excess ── */}
+    <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50/50 border border-amber-100 px-4 py-3 flex items-center justify-between gap-2">
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+          <Scale size={14} className="text-amber-600" />
+        </span>
+        <div className="min-w-0 flex flex-col gap-1">
+          <span
+            className={`inline-flex items-center w-fit gap-1 text-[9.5px] font-bold leading-none px-2 py-1 rounded-full ${
+              solidGoldBalance >= 0
+                ? "bg-emerald-100 text-emerald-700"
+                : "bg-rose-100 text-rose-700"
+            }`}
+          >
+            {solidGoldBalance >= 0 ? "METAL BALANCE" : "EXCESS METAL"}
+          </span>
+          <p className="text-[9.5px] text-gray-400 leading-tight truncate pl-0.5">
+            {solidGoldBalance >= 0 ? "Given on account" : "Owed on account"}
+          </p>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {solidGoldBalance >= 0 ? (
+          <TrendingUp size={15} className="text-emerald-500" />
+        ) : (
+          <TrendingDown size={15} className="text-rose-500" />
+        )}
+        <p className={`text-[18px] font-bold leading-none tabular-nums ${
+          solidGoldBalance >= 0 ? "text-emerald-600" : "text-rose-500"
+        }`}>
+          {Math.abs(Number(solidGoldBalance || 0)).toFixed(3)}g
+        </p>
+      </div>
+    </div>
+
+    {/* ── Solid Metal Given — editable input with stepper ── */}
+    <Field
+      label="Solid Metal Given (g)"
+      icon={<Coins size={11} />}
+      iconColor="bg-amber-100 text-amber-600"
+      error={errors.solidGold}
+    >
+      <div className={`flex items-center h-12 border rounded-2xl overflow-hidden bg-white transition-all ${ringError(errors.solidGold)}`}>
+        <input
+          type="number"
+          value={solidGoldGiven || ""}
+          onChange={(e) =>
+            setSolidGoldGiven(e.target.value === "" ? 0 : Number(e.target.value))
+          }
+          onWheel={(e) => e.currentTarget.blur()}
+          placeholder="0.000"
+          className="flex-1 h-full px-4 outline-none text-[14px] text-gray-700 bg-transparent appearance-none"
+        />
+        <div className="flex flex-col h-full border-l border-gray-100 w-10 flex-shrink-0">
+          <button
+            type="button"
+            onClick={() => setSolidGoldGiven((v) => Number((v + 0.001).toFixed(3)))}
+            className="flex-1 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 transition-colors border-b border-gray-100"
+          >
+            <ChevronUp size={13} strokeWidth={2.5} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setSolidGoldGiven((v) => Math.max(0, Number((v - 0.001).toFixed(3))))}
+            className="flex-1 flex items-center justify-center hover:bg-indigo-50 hover:text-indigo-600 text-gray-400 transition-colors"
+          >
+            <ChevronDown size={13} strokeWidth={2.5} />
+          </button>
+        </div>
+      </div>
+    </Field>
+  </div>
+)}   </div>
     </div>
   );
 };

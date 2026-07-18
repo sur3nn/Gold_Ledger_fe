@@ -103,7 +103,7 @@ async metalList(payload: { search?: string }) {
 },
 async stockOverview(payload: any) {
   const response = await http.get("/api/home/stock-overview", {
-    params: { typeId: payload?.typeId },
+    params: { typeId: payload?.typeId ,factory_retail_id : payload?.factory_retailer_id},
   });
   return response?.data;
 },
