@@ -67,6 +67,7 @@ export interface Product {
   netWeight: number;
   amount: number;
   done: boolean;
+ 
 }
 
 interface Metal { id: number; name: string; }
@@ -81,6 +82,18 @@ export interface ProductBreakdownProps {
   // keys of invalid product ids passed from parent on save attempt
   invalidProductIds?: Set<number>;
   paymentMethod: string;
+  // GST summary values — calculated once in the parent so they stay in sync
+  // with the Transaction Details panel and the Create Bill payload.
+  totalAmount: number;
+  gstAmount: number;
+  sgstAmount: number;
+  gstPercent?: number;
+  sgstPercent?: number;
+  totalAmountWithGST: number;
+  // Whether GST / SGST rows should render in the footer summary — driven
+  // by sessionStorage key "isgst" in the parent.
+  showGst?: boolean;
+   isSales: boolean
 }
 
 const inputClass = `h-10 w-full border border-gray-200 rounded-xl px-3 text-[13px] font-medium text-gray-700 bg-white outline-none focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100/80 transition-all placeholder:text-gray-300`;
@@ -95,6 +108,26 @@ const amtInputErrorClass = `h-10 w-full border border-red-400 rounded-xl px-3 te
 
 const FieldLabel = ({ children }: { children: React.ReactNode }) => (
   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{children}</p>
+);
+
+// ── Summary row (right-side GST breakdown) ─────────────────────────────────────
+const SummaryRow = ({
+  label,
+  value,
+  emphasize = false,
+}: {
+  label: string;
+  value: number;
+  emphasize?: boolean;
+}) => (
+  <div className="flex items-center justify-between gap-6 w-full sm:w-64">
+    <span className={`text-[12px] ${emphasize ? "font-bold text-gray-600" : "font-medium text-gray-400"}`}>
+      {label}
+    </span>
+    <span className={`text-[13px] tabular-nums ${emphasize ? "font-bold text-gray-800" : "font-semibold text-gray-600"}`}>
+      ₹{Number(value || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+    </span>
+  </div>
 );
 
 // ── Searchable Metal Dropdown (per-row, factory-style) ─────────────────────────
@@ -209,7 +242,15 @@ const ProductBreakdown = ({
   metalSearch,
   setMetalSearch,
   invalidProductIds = new Set(),
-  paymentMethod
+  paymentMethod,
+  totalAmount,
+  gstAmount,
+  sgstAmount,
+  gstPercent = 0,
+  sgstPercent = 0,
+  totalAmountWithGST,
+  showGst = false,
+  isSales
 }: ProductBreakdownProps) => {
   // Single expanded id — only one open at a time
   const amountOnly = paymentMethod === "2";
@@ -272,8 +313,6 @@ const ProductBreakdown = ({
     ]);
     setExpandedId(newId); // always open the newly added one
   };
-
-  const totalAmount = products.reduce((s, p) => s + p.amount, 0);
 
   return (
     <div className="bg-white rounded-3xl  border border-gray-100 shadow-sm">
@@ -574,16 +613,38 @@ const ProductBreakdown = ({
         </div>
       )}
 
-      {/* Footer summary */}
-      {products.length > 1 && (
-        <div className="px-5 sm:px-8 py-4 border-t border-gray-100 bg-gradient-to-r from-violet-50/70 to-fuchsia-50/50 flex items-center justify-between gap-3 flex-wrap">
-          <p className="text-[12px] text-gray-400 font-semibold">{products.length} products total</p>
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] text-gray-400 font-medium">Grand Total</span>
-            <span className="text-[14px] font-bold text-rose-500 tabular-nums bg-rose-50 border border-rose-100 px-3 py-1 rounded-lg">
-              ₹{totalAmount.toLocaleString()}
-            </span>
+      {/* Footer summary — GST breakdown */}
+      {products.length > 0 && (
+        <div className="px-5 sm:px-8 py-4 sm:py-5 border-t border-gray-100 bg-gradient-to-r from-violet-50/70 to-fuchsia-50/50 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <p className="text-[12px] text-gray-400 font-semibold">
+            {products.length} product{products.length === 1 ? "" : "s"} total
+          </p>
+{
+  (amountOnly &&  showGst && isSales) && (
+ <div className="flex flex-col gap-1.5 sm:items-end w-full sm:w-auto">
+            <SummaryRow label="Total Amount" value={totalAmount} />
+
+            {/* GST / SGST rows — only shown when the session GST flag is on */}
+          
+              <>
+                <SummaryRow label={`GST (${gstPercent}%)`} value={gstAmount} />
+                <SummaryRow label={`SGST (${sgstPercent}%)`} value={sgstAmount} />
+                <SummaryRow label="GST Included Amount" value={gstAmount + sgstAmount} />
+              </>
+            
+
+            <div className="flex items-center justify-between gap-6 w-full sm:w-64 mt-1.5 pt-2 border-t border-violet-200/60">
+              <span className="text-[12.5px] font-bold text-gray-700">
+                Total Amount (Incl. GST)
+              </span>
+              <span className="text-[15px] font-bold text-rose-500 tabular-nums bg-rose-50 border border-rose-100 px-3 py-1 rounded-lg">
+                ₹{totalAmountWithGST.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </span>
+            </div>
           </div>
+  )
+}
+         
         </div>
       )}
     </div>

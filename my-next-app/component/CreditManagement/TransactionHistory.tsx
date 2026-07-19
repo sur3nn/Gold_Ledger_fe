@@ -5,6 +5,7 @@ import { Search, Clock, AlertCircle, ChevronLeft, ChevronRight, ClipboardList, I
 
 export interface Transaction {
   id: number | string;
+   partyId?: number | string;
   date: string;
   partyName: string;
   type: string;
@@ -28,6 +29,8 @@ interface TransactionHistoryProps {
   limit: number;
   offset: number;
   onPageChange: (newOffset: number) => void;
+  onRowClick?: (transaction: Transaction) => void; // ← added
+  selectedId?: number | string | null;
 }
 
 function SkeletonRow() {
@@ -52,6 +55,8 @@ export default function TransactionHistory({
   limit,
   offset,
   onPageChange,
+  onRowClick,
+  selectedId,
 }: TransactionHistoryProps) {
   const [hoveredId, setHoveredId] = useState<number | string | null>(null);
 
@@ -115,18 +120,21 @@ export default function TransactionHistory({
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-100 bg-violet-50/40">
-              <th className="text-left px-5 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Date</th>
+              <th className="text-left px-5 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide"> <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5" />
+                  Recorded At
+                </span></th>
               <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Party Name</th>
               <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Type</th>
               <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Gold Qty</th>
               <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Amount</th>
-              <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Notes</th>
-              <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">
+              {/* <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">Notes</th> */}
+              {/* <th className="text-left px-4 py-3 text-xs font-bold text-violet-600 uppercase tracking-wide">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
                   Recorded At
                 </span>
-              </th>
+              </th> */}
             </tr>
           </thead>
           <tbody>
@@ -153,15 +161,20 @@ export default function TransactionHistory({
             {!loading && !error && filtered.length > 0 &&
               filtered.map((t) => (
                 <tr
-                  key={t.id}
-                  onMouseEnter={() => setHoveredId(t.id)}
-                  onMouseLeave={() => setHoveredId(null)}
-                  className="border-b border-gray-50 transition-colors duration-150"
-                  style={{
-                    backgroundColor:
-                      hoveredId === t.id ? "rgba(124,58,237,0.06)" : "transparent",
-                  }}
-                >
+  key={t.id}
+  onMouseEnter={() => setHoveredId(t.id)}
+  onMouseLeave={() => setHoveredId(null)}
+  onClick={() => onRowClick?.(t)}
+  className="border-b border-gray-50 transition-colors duration-150 cursor-pointer"
+  style={{
+    backgroundColor:
+      selectedId === t.id
+        ? "rgba(124,58,237,0.10)"
+        : hoveredId === t.id
+        ? "rgba(124,58,237,0.06)"
+        : "transparent",
+  }}
+>
                   <td className="px-5 py-3 text-gray-600">{t.date}</td>
                   <td className="px-4 py-3 text-gray-800 font-medium">{t.partyName}</td>
                   <td className="px-4 py-3">
@@ -177,8 +190,8 @@ export default function TransactionHistory({
                   </td>
                   <td className="px-4 py-3 text-gray-600">{t.goldQty}</td>
                   <td className="px-4 py-3 text-gray-600">{t.amount}</td>
-                  <td className="px-4 py-3 text-gray-400 italic text-xs">{t.notes || "—"}</td>
-                  <td className="px-4 py-3 text-gray-500">{t.recordedAt}</td>
+                  {/* <td className="px-4 py-3 text-gray-400 italic text-xs">{t.notes || "—"}</td>
+                  <td className="px-4 py-3 text-gray-500">{t.recordedAt}</td> */}
                 </tr>
               ))
             }
@@ -237,12 +250,15 @@ export default function TransactionHistory({
 
         {!loading && !error && filtered.map((t) => (
           <div
-            key={t.id}
-            className="p-4 transition-colors duration-150 active:bg-violet-50/40"
-            style={{ backgroundColor: "transparent" }}
-            onTouchStart={(e) => (e.currentTarget.style.backgroundColor = "rgba(124,58,237,0.06)")}
-            onTouchEnd={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
-          >
+  key={t.id}
+  onClick={() => onRowClick?.(t)}
+  className="p-4 transition-colors duration-150 active:bg-violet-50/40 cursor-pointer"
+  style={{
+    backgroundColor: selectedId === t.id ? "rgba(124,58,237,0.10)" : "transparent",
+  }}
+  onTouchStart={(e) => (e.currentTarget.style.backgroundColor = "rgba(124,58,237,0.06)")}
+  onTouchEnd={(e) => (e.currentTarget.style.backgroundColor = "transparent")}
+>
             {/* Row 1 — party + type badge */}
             <div className="flex items-center justify-between mb-1.5">
               <p className="text-sm font-semibold text-gray-800">{t.partyName}</p>

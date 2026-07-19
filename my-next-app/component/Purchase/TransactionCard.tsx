@@ -16,7 +16,9 @@ import {
   Banknote,
   Scale,
   TrendingUp, 
-  TrendingDown 
+  TrendingDown,
+  Box,
+  ReceiptText
 } from "lucide-react";
 
 
@@ -53,8 +55,21 @@ interface TransactionCardProps {
   errors?: { factory?: string; payment?: string; solidGold?: string; totalPayment?: string };
   totalPaymentGiven: number;
 setTotalPaymentGiven: React.Dispatch<React.SetStateAction<number>>;
-solidGoldBalance:number;
-totalPaymentBalance:number;
+solidGoldBalance:any;
+totalPaymentBalance:any;
+  beforeBoxWeight: number;
+  setBeforeBoxWeight: React.Dispatch<React.SetStateAction<number>>;
+  afterBoxWeight: number;
+  setAfterBoxWeight: React.Dispatch<React.SetStateAction<number>>;
+  // GST / SGST are entered as a percentage rate only; the parent computes
+  // the resulting amount for display in the Products Breakdown footer.
+  gstPercent: number;
+  setGstPercent: React.Dispatch<React.SetStateAction<number>>;
+  sgstPercent: number;
+  setSgstPercent: React.Dispatch<React.SetStateAction<number>>;
+  // Whether GST / SGST fields should render at all — driven by
+  // sessionStorage key "isgst" in the parent.
+  showGst: boolean;
 }
 
 // ── Field wrapper with label + optional error ─────────────────────────────────
@@ -88,6 +103,34 @@ const Field = ({
   </div>
 );
 
+// ── Editable GST / SGST percentage box — user types the rate (%) only.
+// The amount itself is calculated (rate × total) and shown elsewhere
+// (Products Breakdown footer summary), not here. ───────────────────────────
+const EditablePercentBox = ({
+  label,
+  percent,
+  onChange,
+}: {
+  label: string;
+  percent: number;
+  onChange: (v: number) => void;
+}) => (
+  <div className="rounded-2xl bg-gray-50 border border-gray-100 px-4 py-2.5 flex flex-col gap-0.5">
+    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{label}</p>
+    <div className="flex items-center gap-1">
+      <input
+        type="number"
+        value={percent || ""}
+        placeholder="0"
+        onChange={(e) => onChange(e.target.value === "" ? 0 : Number(e.target.value))}
+        onWheel={(e) => e.currentTarget.blur()}
+        className="flex-1 min-w-0 outline-none text-[15px] font-bold text-gray-700 bg-transparent tabular-nums"
+      />
+      <span className="text-[13px] font-bold text-gray-400 flex-shrink-0">%</span>
+    </div>
+  </div>
+);
+
 const TransactionCard = ({
   isSales = false,
   factories,
@@ -108,9 +151,16 @@ const TransactionCard = ({
   setTotalPaymentGiven,
   totalPaymentGiven,
   solidGoldBalance,
-  totalPaymentBalance
-
-  
+  totalPaymentBalance,
+  beforeBoxWeight,
+  setBeforeBoxWeight,
+  afterBoxWeight,
+  setAfterBoxWeight,
+  gstPercent,
+  setGstPercent,
+  sgstPercent,
+  setSgstPercent,
+  showGst,
 }: TransactionCardProps) => {
   // ── Source labels (Factory vs Retailer) ──────────────────────────────────
   const sourceLabel = isSales ? "Retailer Source" : "Factory Source";
@@ -347,6 +397,43 @@ const TransactionCard = ({
               )}
             </div>
           </Field>
+
+          {/* ── Before / After Box Weight — Sales flow only ─────────────── */}
+          {isSales && (
+            <>
+              <Field label="Before Box Weight (g)" icon={<Box size={11} />} iconColor="bg-cyan-100 text-cyan-600">
+                <div className="flex items-center h-12 border border-gray-200 rounded-2xl px-4 bg-white transition-all focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100/70">
+                  <input
+                    type="number"
+                    value={beforeBoxWeight || ""}
+                    placeholder="0.000"
+                    onChange={(e) =>
+                      setBeforeBoxWeight(e.target.value === "" ? 0 : Number(e.target.value))
+                    }
+                    onWheel={(e) => e.currentTarget.blur()}
+                    className="flex-1 h-full outline-none text-[14px] text-gray-700 bg-transparent placeholder:text-gray-300"
+                  />
+                  <span className="text-[11px] text-gray-400 flex-shrink-0">gm</span>
+                </div>
+              </Field>
+
+              <Field label="After Box Weight (g)" icon={<Box size={11} />} iconColor="bg-cyan-100 text-cyan-600">
+                <div className="flex items-center h-12 border border-gray-200 rounded-2xl px-4 bg-white transition-all focus-within:border-indigo-300 focus-within:ring-2 focus-within:ring-indigo-100/70">
+                  <input
+                    type="number"
+                    value={afterBoxWeight || ""}
+                    placeholder="0.000"
+                    onChange={(e) =>
+                      setAfterBoxWeight(e.target.value === "" ? 0 : Number(e.target.value))
+                    }
+                    onWheel={(e) => e.currentTarget.blur()}
+                    className="flex-1 h-full outline-none text-[14px] text-gray-700 bg-transparent placeholder:text-gray-300"
+                  />
+                  <span className="text-[11px] text-gray-400 flex-shrink-0">gm</span>
+                </div>
+              </Field>
+            </>
+          )}
         </div>
 
 {paymentMethod === "2" ? (
@@ -407,6 +494,14 @@ const TransactionCard = ({
         />
       </div>
     </Field>
+
+    {/* ── GST / SGST — typable percentage rate only, shown when session flag is on ── */}
+    {(showGst && isSales) && (
+      <div className="grid grid-cols-2 gap-3">
+        <EditablePercentBox label="GST" percent={gstPercent} onChange={setGstPercent} />
+        <EditablePercentBox label="SGST" percent={sgstPercent} onChange={setSgstPercent} />
+      </div>
+    )}
   </div>
 ) : (
   <div className="flex flex-col gap-4">

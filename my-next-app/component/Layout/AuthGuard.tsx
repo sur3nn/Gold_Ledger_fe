@@ -14,7 +14,7 @@ export default function AuthGuard({
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    const token = sessionStorage.getItem("token");
 
     // Logged in user trying to access login
     if (token && pathname === "/login") {
@@ -22,8 +22,8 @@ export default function AuthGuard({
       return;
     }
 
-    // Not logged in user trying to access dashboard
-    if (!token && pathname.startsWith("/dashboard")) {
+    // Not logged in user trying to access protected pages
+    if (!token && pathname !== "/login") {
       router.replace("/login");
       return;
     }

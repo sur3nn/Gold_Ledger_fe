@@ -10,7 +10,21 @@ import ProductBreakdown from "./ProductBreakdown";
 import RecordedHistory from "./RecordedHistory";
 import FooterAction from "./FooterAction";
 import SaveSuccessPopup from "./SaveSuccessPopup";
-import { savePurchaseAction, getFactoryListAction, getPaymentTypesAction, getMetalListAction, getBillingHistoryAction, getStockOverviewAction, getRetailerListAction } from "@/Redux/Action/action";
+import InvoicePrintModal, { InvoiceData } from "./Invoiceprintmodal";
+import {
+  savePurchaseAction,
+  getFactoryListAction,
+  getPaymentTypesAction,
+  getMetalListAction,
+  getBillingHistoryAction,
+  getStockOverviewAction,
+  getRetailerListAction,
+  // NOTE: assumed action — wire this up to whatever endpoint returns the
+  // line items for a single bill (the shape you shared: billing_id,
+  // bill_no, product_name, amount, net_weight, ... per row). Rename/adjust
+  // to match your actual action file.
+  getBillDetailsAction,
+} from "@/Redux/Action/action";
 import toast from "react-hot-toast";
 
 export interface Product {
@@ -31,6 +45,15 @@ export interface Product {
   done: boolean;
 }
 
+// ── GST configuration ─────────────────────────────────────────────────────
+// Default rates used to seed the (now user-editable) GST / SGST fields.
+// GST + SGST are calculated independently on the products' total amount,
+// but the user can override either value directly in the UI.
+const GST_RATE_PERCENT = 1.5;
+const SGST_RATE_PERCENT = 1.5;
+
+const round2 = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
+
 const Purchase = ({ isSales }: { isSales: boolean }) => {
   const dispatch = useDispatch<any>();
 
@@ -45,6 +68,19 @@ const Purchase = ({ isSales }: { isSales: boolean }) => {
 const [totalPaymentGiven, setTotalPaymentGiven] = useState<number>(0);
   const [factorySearch, setFactorySearch] = useState("");
   const [metalSearch, setMetalSearch] = useState("");
+
+  // ── Box weight fields (Sales Transaction Details) ───────────────────────
+  const [beforeBoxWeight, setBeforeBoxWeight] = useState<number>(0);
+  const [afterBoxWeight, setAfterBoxWeight] = useState<number>(0);
+
+  // ── Whether GST / SGST fields should be shown at all — driven by
+  // sessionStorage key "isgst" ("true" / "false"). Read once on mount. ────
+  const [showGst, setShowGst] = useState(false);
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setShowGst(sessionStorage.getItem("isgst") === "true");
+    }
+  }, []);
 
   // initial load
  useEffect(() => {
@@ -92,6 +128,47 @@ const [historyPage, setHistoryPage] = useState(1);
 const historyLimit = 5;
 const billingHistory = billingHistoryData ?? [];
 
+// ── Print / invoice modal ────────────────────────────────────────────────
+const [printingBillId, setPrintingBillId] = useState<number | null>(null);
+const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+const [invoiceLoading, setInvoiceLoading] = useState(false);
+const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null);
+
+const handlePrintBill = async (billId: number) => {
+  setPrintingBillId(billId);
+  setInvoiceModalOpen(true);
+  setInvoiceLoading(true);
+  try {
+    const res = await dispatch(getBillDetailsAction({ billId }));
+    if (getBillDetailsAction.fulfilled.match(res)) {
+      // API shape: { success: true, data: { bill_no, bill_date, party_name,
+      // gst, sgst, total_amt_with_gst, products: [...], ... } }
+      const data = res.payload?.data ?? res.payload;
+      const items = data?.products ?? [];
+      setInvoiceData({
+        bill_no: data?.bill_no ?? String(billId),
+        bill_date: data?.bill_date,
+        customer: data?.party_name,
+        sale_type: "intra",
+        total_amount: data?.total_amount,
+        gst: data?.gst,
+        sgst: data?.sgst,
+        total_amt_with_gst: data?.total_amt_with_gst,
+        items,
+      });
+    } else {
+      toast.error("Failed to load bill details for printing.");
+      setInvoiceModalOpen(false);
+    }
+  } catch {
+    toast.error("Failed to load bill details for printing.");
+    setInvoiceModalOpen(false);
+  } finally {
+    setPrintingBillId(null);
+    setInvoiceLoading(false);
+  }
+};
+
 useEffect(() => {
   const timer = setTimeout(() => {
     dispatch(getBillingHistoryAction({
@@ -115,13 +192,20 @@ const sourceLoading = isSales ? retailerListLoad : factoryListLoad;
   const [factoryName, setFactoryName] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("1");
   const [solidGoldGiven, setSolidGoldGiven] = useState<number>(0);
-   const [solidGoldBalance, setSolidGoldBalance] = useState<number>(0);
-   const [totalPaymentBalance,setTotalPaymentBalance] = useState<number>(0);
+   // Balance is unknown (null) until a factory/retailer is selected — it is
+   // NOT zero by default, since zero would misleadingly read as "no balance".
+   const [solidGoldBalance, setSolidGoldBalance] = useState<number | null>(null);
+   const [totalPaymentBalance,setTotalPaymentBalance] = useState<number | null>(null);
 
   const metalList = metalListData?.length ? metalListData : [];
 
 useEffect(() => {
-  if(!selectedFactory?.id) return;
+  if (!selectedFactory?.id) {
+    // No factory/retailer selected — balance is unknown, not zero.
+    setSolidGoldBalance(null);
+    setTotalPaymentBalance(null);
+    return;
+  }
   dispatch(
     getStockOverviewAction({
       typeId: isSales ? 2 : 1,
@@ -130,7 +214,7 @@ useEffect(() => {
   );
 }, [isSales, selectedFactory, dispatch]);
 useEffect(() => {
-  if (!stockOverviewData) return;
+  if (!stockOverviewData || !selectedFactory?.id) return;
    const weightBalance =
   stockOverviewData?.total_gold_given - stockOverviewData?.total_net_weight;
 
@@ -142,7 +226,7 @@ const roundedAmountBalance = Math.round(amountBalance * 100) / 100;   // 2 decim
 
 setSolidGoldBalance(roundedWeightBalance);
 setTotalPaymentBalance(roundedAmountBalance);
-}, [stockOverviewData]);
+}, [stockOverviewData, selectedFactory]);
 
   const [products, setProducts] = useState<Product[]>([
     {
@@ -163,6 +247,24 @@ setTotalPaymentBalance(roundedAmountBalance);
       done: false,
     },
   ]);
+
+  // ── GST calculations — GST / SGST are now user-editable *percentage
+  // rates* (defaulting to GST_RATE_PERCENT / SGST_RATE_PERCENT). The user
+  // types the % in the Transaction Details panel (see TransactionCard),
+  // and the amounts below are derived from that rate × the products total.
+  const totalAmount = products.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+  const [gstPercent, setGstPercent] = useState<number>(GST_RATE_PERCENT);
+  const [sgstPercent, setSgstPercent] = useState<number>(SGST_RATE_PERCENT);
+
+  const gstAmount = round2((totalAmount * gstPercent) / 100);
+  const sgstAmount = round2((totalAmount * sgstPercent) / 100);
+
+  // When GST is turned off (sessionStorage "isgst" !== "true") it's excluded
+  // from the grand total as well as from display.
+  const totalAmountWithGST = round2(
+    totalAmount + (showGst ? gstAmount + sgstAmount : 0)
+  );
 
   // ── Validation ────────────────────────────────────────────────────────────
   const isCashPayment = paymentMethod === "2";
@@ -240,6 +342,13 @@ const handleSave = async () => {
     Number(paymentMethod) === 2 ? Number(totalPaymentGiven) : 0,
     product_type_id:  isSales ? 2 : 1,
     status_id: 1,
+    box_weight_before: Number(beforeBoxWeight) || 0,
+    box_weight_after: Number(afterBoxWeight) || 0,
+    gst: showGst ? Number(gstAmount.toFixed(2)) : 0,
+    sgst: showGst ? Number(sgstAmount.toFixed(2)) : 0,
+    gst_percent: showGst ? gstPercent : 0,
+    sgst_percent: showGst ? sgstPercent : 0,
+    total_amt_with_gst: Number(totalAmountWithGST.toFixed(2)),
     products: products.map((p) => ({
       quantity: p.quantity,
       metal_id: p.metalId,
@@ -260,6 +369,17 @@ const handleSave = async () => {
   
   const res = await dispatch(savePurchaseAction(payload));
   if (savePurchaseAction.fulfilled.match(res)) {
+
+     // Reset factory/retailer selection back to nothing selected
+  setSelectedFactory(null);
+  setFactoryName("");
+  setFactorySearch("");
+
+  // Reset balances — unknown/null again until a new factory/retailer is
+  // picked, not zero (zero would misleadingly imply a known nil balance).
+  setSolidGoldBalance(null);
+  setTotalPaymentBalance(null);
+
     setPopupOpen(true);
     setHistoryPage(1);
     await dispatch(getBillingHistoryAction({
@@ -268,12 +388,6 @@ const handleSave = async () => {
       limit: historyLimit,
       offset: 0,
     }));
-   await dispatch(
-  getStockOverviewAction({
-    typeId: isSales ? 2 : 1,
-    factory_retailer_id: selectedFactory?.id,
-  })
-);
   }else {
   toast.error(
     res.payload?.message || "Billing creation failed."
@@ -286,9 +400,14 @@ const handleSave = async () => {
     setPopupOpen(false);
     setSelectedFactory(null);
     setFactoryName("");
+    setFactorySearch("");
     setPaymentMethod("1");
     setSolidGoldGiven(0);
     setTotalPaymentGiven(0);
+    setSolidGoldBalance(null);
+    setTotalPaymentBalance(null);
+    setBeforeBoxWeight(0);
+    setAfterBoxWeight(0);
     setFormErrors({});
     setInvalidProductIds(new Set());
     setProducts([
@@ -348,6 +467,15 @@ const handleSave = async () => {
   setTotalPaymentGiven={setTotalPaymentGiven}
   solidGoldBalance={solidGoldBalance}
   totalPaymentBalance={totalPaymentBalance}
+  beforeBoxWeight={beforeBoxWeight}
+  setBeforeBoxWeight={setBeforeBoxWeight}
+  afterBoxWeight={afterBoxWeight}
+  setAfterBoxWeight={setAfterBoxWeight}
+  gstPercent={gstPercent}
+  setGstPercent={setGstPercent}
+  sgstPercent={sgstPercent}
+  setSgstPercent={setSgstPercent}
+  showGst={showGst}
   errors={formErrors}
 />
           <StockOverview data={stockOverviewData} loading={stockOverviewLoad} />
@@ -362,10 +490,17 @@ const handleSave = async () => {
             setMetalSearch={setMetalSearch}
             paymentMethod={paymentMethod}
             invalidProductIds={invalidProductIds}
-
+            totalAmount={totalAmount}
+            gstAmount={gstAmount}
+            sgstAmount={sgstAmount}
+            gstPercent={gstPercent}
+            sgstPercent={sgstPercent}
+            totalAmountWithGST={totalAmountWithGST}
+            showGst={showGst}
+            isSales={isSales}
           />
 
-          <FooterAction onSave={handleSave} loading={savePurchaseLoad} />
+          <FooterAction onSave={handleSave} loading={savePurchaseLoad} isSales={isSales} />
         </div>
 
         <div className="bg-gradient-to-br from-violet-50/40 via-white to-orange-50/30 rounded-3xl p-3 sm:p-6 border border-violet-100/50">
@@ -378,10 +513,19 @@ const handleSave = async () => {
   setPage={setHistoryPage}
   limit={historyLimit}
   total={billingHistoryTotal}
+  onPrint={handlePrintBill}
+  printingBillId={printingBillId}
 />
         </div>
       </div>
       </div>
+
+      <InvoicePrintModal
+        isOpen={invoiceModalOpen}
+        onClose={() => setInvoiceModalOpen(false)}
+        invoice={invoiceData}
+        loading={invoiceLoading}
+      />
     </>
   );
 };

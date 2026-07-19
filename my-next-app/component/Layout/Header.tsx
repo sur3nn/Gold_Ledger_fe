@@ -72,11 +72,10 @@ const Header = () => {
     };
   }, [isMobileMenuOpen]);
 
-  const handleSignOut = () => {
-    localStorage.clear();
-    router.push("/login");
-  };
-
+ const handleSignOut = () => {
+  sessionStorage.clear();
+  router.replace("/login");
+};
   return (
     <header
       className="

@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 
-import { getBillingHistoryAction, getCreditManagementHistory, getDashboardSummary, getEntityWiseReport, getFactoryListAction, getMetalListAction, getOutstandingReport, getPaymentTypesAction, getPurchaseReport, getRetailerListAction, getSalesReport, getSalesReportTab, getStockOverviewAction, loginAction, savePurchaseAction } from "../Action/action";
+import { getBillDetailsAction, getBillingHistoryAction, getCreditManagementHistory, getDashboardSummary, getEntityWiseReport, getFactoryListAction, getMetalListAction, getOutstandingReport, getPaymentTypesAction, getPurchaseReport, getRetailerListAction, getSalesReport, getSalesReportTab, getStockOverviewAction, loginAction, savePurchaseAction, transcationCreditManagementHistory } from "../Action/action";
 
 // ─── Initial State ────────────────────────────────────────────────────────────
 const initialState: any = {
@@ -61,7 +61,14 @@ const initialState: any = {
  
   //
   loginLoad : false,
-  loginData : null
+  loginData : null,
+
+
+  transcationData : null,
+  transcationLoad : false,
+
+  billDetailsLoad : false,
+  billDetailsData : null
 
 };
 
@@ -335,9 +342,35 @@ const purchaseSlice = createSlice({
   .addCase(loginAction.rejected, (state, action: any) => {
     state.loginLoad = false;
   });
-
+  //Credit Dashboard
+  builder
+      .addCase(transcationCreditManagementHistory.pending, (state) => {
+        state.transcationLoad = true;
+        state.outstandingError = null;
+      })
+      .addCase(transcationCreditManagementHistory.fulfilled, (state, action: any) => {
+        state.transcationLoad = false;
+        state.transcationData = action.payload;
+      })
+      .addCase(transcationCreditManagementHistory.rejected, (state, action: any) => {
+        state.transcationLoad = false;
+      });
+      //getBillDetailsAction
+       builder
+      .addCase(getBillDetailsAction.pending, (state) => {
+        state.billDetailsLoad = true;
+        state.outstandingError = null;
+      })
+      .addCase(getBillDetailsAction.fulfilled, (state, action: any) => {
+        state.billDetailsLoad = false;
+        state.billDetailsData = action.payload;
+      })
+      .addCase(getBillDetailsAction.rejected, (state, action: any) => {
+        state.billDetailsLoad = false;
+      });
   },
 });
 
 export const { clearPurchaseData } = purchaseSlice.actions;
 export default purchaseSlice.reducer;
+
