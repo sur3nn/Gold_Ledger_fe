@@ -4,7 +4,7 @@ import axios, {
 } from "axios";
 
 export const http = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://10.51.237.215:5000",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://172.20.10.3:5000",
   headers: {
     "Content-Type": "application/json",
   },
@@ -13,7 +13,7 @@ export const http = axios.create({
 http.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (typeof window !== "undefined") {
-      const token = localStorage.getItem("token");
+      const token = sessionStorage.getItem("token");
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
@@ -30,7 +30,8 @@ http.interceptors.response.use(
   (error: AxiosError) => {
     if (typeof window !== "undefined") {
       if (error.response?.status === 401) {
-        localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
+        sessionStorage.removeItem("isgst");
         window.location.href = "/login";
       }
     }

@@ -18,12 +18,6 @@ interface ReportsHeaderProps {
   onApply: () => void;
 }
 
-/* ────────────────────────────────────────────────────────────
-   Date helpers — keep the same "yyyy-mm-dd" string contract
-   that the native <input type="date"> used, so nothing else
-   in the app that reads fromDate/toDate needs to change.
-──────────────────────────────────────────────────────────── */
-
 const toISO = (d: Date) => {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -88,10 +82,6 @@ const THEME = {
   },
 } satisfies Record<Theme, Record<string, string>>;
 
-/* ────────────────────────────────────────────────────────────
-   Calendar dropdown panel
-──────────────────────────────────────────────────────────── */
-
 function CalendarPanel({
   value,
   onSelect,
@@ -143,7 +133,6 @@ function CalendarPanel({
 
   return (
     <div className="absolute top-[calc(100%+10px)] left-0 z-[80] w-[300px] rounded-2xl bg-white shadow-2xl ring-1 ring-black/5 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-      {/* Header */}
       <div
         className="px-4 pt-4 pb-3 flex items-center justify-between"
         style={{ background: t.headerBg }}
@@ -171,7 +160,6 @@ function CalendarPanel({
         </button>
       </div>
 
-      {/* Weekdays */}
       <div className="grid grid-cols-7 px-3 pt-3 pb-1">
         {WEEKDAYS.map((w) => (
           <div
@@ -183,7 +171,6 @@ function CalendarPanel({
         ))}
       </div>
 
-      {/* Days */}
       <div className="grid grid-cols-7 gap-y-1 px-3 pb-3">
         {cells.map(({ date, current }, i) => {
           const disabled = !!minDate && isBefore(date, minDate);
@@ -234,7 +221,6 @@ function CalendarPanel({
         })}
       </div>
 
-      {/* Footer */}
       <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-100 bg-gray-50/60">
         <button
           type="button"
@@ -262,10 +248,6 @@ function CalendarPanel({
     </div>
   );
 }
-
-/* ────────────────────────────────────────────────────────────
-   Date field — icon + label + value, opens the calendar panel
-──────────────────────────────────────────────────────────── */
 
 function DateField({
   label,
@@ -346,10 +328,6 @@ function DateField({
   );
 }
 
-/* ────────────────────────────────────────────────────────────
-   Main component
-──────────────────────────────────────────────────────────── */
-
 export default function ReportsHeader({
   fromDate,
   toDate,
@@ -361,7 +339,6 @@ export default function ReportsHeader({
 
   return (
     <div className="flex flex-col gap-4">
-      {/* ── Title Row ── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <div className="flex items-center gap-2 mb-0.5">
@@ -389,14 +366,12 @@ export default function ReportsHeader({
         </div>
       </div>
 
-      {/* ── Date Range Row ── */}
       <div
         className="rounded-2xl p-1 shadow-sm"
         style={{ background: "linear-gradient(135deg, #a78bfa 0%, #f472b6 50%, #fb923c 100%)" }}
       >
         <div className="bg-white rounded-xl px-3 sm:px-5 py-1 flex flex-col sm:flex-row gap-0 sm:gap-0 items-stretch sm:items-center">
 
-          {/* From */}
           <DateField
             label="From"
             value={fromDate}
@@ -407,7 +382,6 @@ export default function ReportsHeader({
             onClose={() => setActiveField((f) => (f === "from" ? null : f))}
           />
 
-          {/* Divider */}
           <div className="hidden sm:flex items-center px-3">
             <div
               className="w-6 h-6 rounded-full flex items-center justify-center"
@@ -421,7 +395,6 @@ export default function ReportsHeader({
             style={{ background: "linear-gradient(90deg, #a78bfa40, #f472b640, #fb923c40)" }}
           />
 
-          {/* To */}
           <DateField
             label="To"
             value={toDate}
@@ -433,13 +406,11 @@ export default function ReportsHeader({
             onClose={() => setActiveField((f) => (f === "to" ? null : f))}
           />
 
-          {/* Divider before button */}
           <div
             className="hidden sm:block w-px mx-3 self-stretch"
             style={{ background: "linear-gradient(180deg, #a78bfa40, #f472b640)" }}
           />
 
-          {/* Apply button */}
           <div className="py-2 sm:py-0 sm:pl-0">
             <button
               onClick={onApply}

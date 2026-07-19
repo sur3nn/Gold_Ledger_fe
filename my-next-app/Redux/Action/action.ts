@@ -98,7 +98,7 @@ export const getDashboardSummary = createAsyncThunk(
 //report
 export const getSalesReportTab = createAsyncThunk(
   "purchase/getSalesReportTab",
-  async (payload: { fromDate?: string; toDate?: string } = {}, thunkAPI) => {
+  async (payload: { fromDate?: string; toDate?: string; limit?: any; offset?: any } = {}, thunkAPI) => {
     try {
       return await axiosFile.salesReport(payload);
     } catch (err: any) {
@@ -109,7 +109,7 @@ export const getSalesReportTab = createAsyncThunk(
  
 export const getPurchaseReport = createAsyncThunk(
   "purchase/getPurchaseReport",
-  async (payload: { fromDate?: string; toDate?: string } = {}, thunkAPI) => {
+  async (payload: { fromDate?: string; toDate?: string; limit?: any; offset?: any  } = {}, thunkAPI) => {
     try {
       return await axiosFile.purchaseReport(payload);
     } catch (err: any) {
@@ -155,3 +155,26 @@ export const loginAction = createAsyncThunk(
   }
 );
 
+export const transcationCreditManagementHistory: any = createAsyncThunk(
+  "transcationCreditManagementHistory",
+  async (payload: any) => {
+    console.log("payload",payload);
+    
+    const response: any = await axiosFile.creditManagementTranscation(payload);
+    console.log("responset",response);
+    
+    return response.data;
+  }
+);
+
+export const getBillDetailsAction: any = createAsyncThunk(
+  "getBillDetailsAction",
+  async (payload: any) => {
+    console.log("payload",payload);
+    
+    const response: any = await axiosFile.getBillDetails(payload);
+    console.log("responset",response);
+    
+    return response.data;
+  }
+);

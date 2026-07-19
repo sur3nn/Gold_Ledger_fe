@@ -32,6 +32,13 @@ async login(payload: {
   });
   return response?.data;
 },
+//getCreditManagementHistory
+  async creditManagementTranscation(payload: any){
+    const response = await http.get("/api/home/credit-details", {
+    params: { typeId: payload?.typeId ,factory_retail_id : payload?.factory_retailer_id},
+  });
+  return response?.data;
+},
     async report(payload: any) {
     const response = await http.post("/api/report", payload);
     return response?.data;
@@ -120,16 +127,22 @@ async dashboardSummary() {
 },
 //report
 
-async salesReport(payload: { fromDate?: string; toDate?: string }) {
+async salesReport(payload: { fromDate?: string; toDate?: string; limit?: number; offset?: number }) {
   const response = await http.get("/api/reports/sales", {
-    params: { from: payload?.fromDate || undefined, to: payload?.toDate || undefined },
+    params: {
+      from: payload?.fromDate || undefined,
+      to: payload?.toDate || undefined,
+      limit: payload?.limit,
+      offset: payload?.offset,
+    },
   });
   return response?.data;
 },
  
-async purchaseReport(payload: { fromDate?: string; toDate?: string }) {
+async purchaseReport(payload: { fromDate?: string; toDate?: string; limit?: number; offset?: number }) {
   const response = await http.get("/api/reports/purchase", {
-    params: { from: payload?.fromDate || undefined, to: payload?.toDate || undefined },
+    params: { from: payload?.fromDate || undefined, to: payload?.toDate || undefined ,limit: payload?.limit,
+      offset: payload?.offset},
   });
   return response?.data;
 },
@@ -144,6 +157,13 @@ async outstandingReport(payload: { fromDate?: string; toDate?: string }) {
 async entityWiseReport(payload: { fromDate?: string; toDate?: string }) {
   const response = await http.get("/api/reports/entity-wise", {
     params: { from: payload?.fromDate || undefined, to: payload?.toDate || undefined },
+  });
+  return response?.data;
+},
+//billDetailsPrint
+ async getBillDetails(payload: any){
+    const response = await http.get("/api/home/bill-details", {
+    params: { bill_id: payload?.billId},
   });
   return response?.data;
 },

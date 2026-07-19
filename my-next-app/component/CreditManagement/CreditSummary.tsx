@@ -9,6 +9,8 @@ interface CreditSummaryProps {
   totalCashGiven: string | number;
   totalCashTaken: string | number;
   loading: boolean;
+   selectedPartyName?: string | null; 
+  onClearParty?: () => void;
 }
 
 function SkeletonBox({ className }: { className?: string }) {
@@ -21,20 +23,22 @@ export default function CreditSummary({
   totalCashGiven,
   totalCashTaken,
   loading,
+   selectedPartyName,
+  onClearParty,
 }: CreditSummaryProps) {
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedParty, setSelectedParty] = useState<string | null>(null);
+  // const [searchValue, setSearchValue] = useState("");
+  // const [selectedParty, setSelectedParty] = useState<string | null>(null);
 
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchValue.trim()) {
-      setSelectedParty(searchValue.trim());
-      setSearchValue("");
-    }
-  };
+  // const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  //   if (e.key === "Enter" && searchValue.trim()) {
+  //     setSelectedParty(searchValue.trim());
+  //     setSearchValue("");
+  //   }
+  // };
 
-  const handleClearParty = () => {
-    setSelectedParty(null);
-  };
+  // const handleClearParty = () => {
+  //   setSelectedParty(null);
+  // };
 
   return (
     <div>
@@ -47,7 +51,7 @@ export default function CreditSummary({
             <p className="text-sm text-gray-500 mt-0.5">Track pending gold quantities and cash balances</p>
           </div>
         </div>
-        <div className="relative w-64">
+        {/* <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-violet-400 w-4 h-4" />
           <input
             type="text"
@@ -57,20 +61,20 @@ export default function CreditSummary({
             onKeyDown={handleSearchKeyDown}
             className="w-full pl-9 pr-4 py-2 border border-violet-100 rounded-full text-sm text-gray-700 placeholder-gray-400 outline-none focus:border-violet-300 focus:ring-2 focus:ring-violet-50 bg-white shadow-sm transition-all"
           />
-        </div>
+        </div> */}
       </div>
 
       {/* Selected Party Chip */}
-      {selectedParty && (
-        <div className="mb-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-violet-200 rounded-lg text-sm text-gray-700 bg-white">
-            <span>{selectedParty}</span>
-            <button onClick={handleClearParty} className="text-gray-400 hover:text-gray-600">
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
+      {selectedPartyName && (
+  <div className="mb-4">
+    <div className="inline-flex items-center gap-2 px-3 py-1.5 border border-violet-200 rounded-lg text-sm text-gray-700 bg-white">
+      <span>{selectedPartyName}</span>
+      <button onClick={onClearParty} className="text-gray-400 hover:text-gray-600">
+        <X className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  </div>
+)}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-2 gap-4 mb-6">
