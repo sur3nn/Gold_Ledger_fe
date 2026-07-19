@@ -137,11 +137,18 @@ const RecordedHistory = ({
           className="grid px-5 sm:px-6 py-3 border-b border-gray-100 bg-violet-50/40"
           style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(90px, 1fr))`, minWidth: Math.max(640, columns.length * 120) }}
         >
-          {columns.map((col) => (
-            <span key={col} className="text-[12px] font-bold text-violet-600 whitespace-nowrap pr-2 uppercase tracking-wide">
-              {col}
-            </span>
-          ))}
+         {columns.map((col) => (
+  <span
+    key={col}
+    className={`text-[12px] font-bold text-violet-600 whitespace-nowrap pr-2 uppercase tracking-wide ${
+      col === "Print"
+        ? "sticky right-0 z-20 bg-violet-50 pl-3 shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.15)]"
+        : ""
+    }`}
+  >
+    {col}
+  </span>
+))}
         </div>
 
         {loading ? (
@@ -174,21 +181,25 @@ const RecordedHistory = ({
                 </>
               )}
 
-              <span className="pr-2">
-                <button
-                  type="button"
-                  onClick={() => onPrint(row.id)}
-                  disabled={printingBillId === row.id}
-                  title="Print bill"
-                  className="w-8 h-8 flex items-center justify-center rounded-xl border border-violet-200 text-violet-500 hover:bg-violet-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {printingBillId === row.id ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Printer size={14} />
-                  )}
-                </button>
-              </span>
+           <span
+  className={`pr-2 sticky right-0 z-10 pl-3 flex justify-center shadow-[-4px_0_6px_-4px_rgba(0,0,0,0.1)] ${
+    idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+  }`}
+>
+  <button
+    type="button"
+    onClick={() => onPrint(row.id)}
+    disabled={printingBillId === row.id}
+    title="Print bill"
+    className="w-8 h-8 flex items-center justify-center rounded-xl border border-violet-200 text-violet-500 hover:bg-violet-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+  >
+    {printingBillId === row.id ? (
+      <Loader2 size={14} className="animate-spin" />
+    ) : (
+      <Printer size={14} />
+    )}
+  </button>
+</span>
             </div>
           ))
         ) : (
