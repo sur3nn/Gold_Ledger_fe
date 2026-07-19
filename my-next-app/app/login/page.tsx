@@ -43,8 +43,8 @@ export default function LoginPage() {
       console.log("result", result?.data?.token);
       sessionStorage.setItem("token", result?.data?.token);
 
-// Store GST flag only for role_id = 1
-if (result?.data?.role_id === 1) {
+// Store GST flag only for role_id = 2
+if (result?.data?.role_id === 2) {
   sessionStorage.setItem("isgst", "true");
 } else {
   sessionStorage.setItem("isgst", "false");
