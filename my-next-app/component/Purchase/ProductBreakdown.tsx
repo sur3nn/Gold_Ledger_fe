@@ -524,6 +524,16 @@ const ProductBreakdown = ({
                           setMetalSearch={setMetalSearch}
                         />
                       </div>
+                      <div>
+                        <FieldLabel>Category {hasCategoryError && <span className="text-red-400 normal-case">*</span>}</FieldLabel>
+                        <input
+                          type="text"
+                          value={p.category}
+                          placeholder="e.g. Ring, Chain, Bangle"
+                          onChange={(e) => updateProduct(p.id, "category", e.target.value)}
+                          className={hasCategoryError ? inputErrorClass : inputClass}
+                        />
+                      </div>
 
                       {/* Product Name — back inside, wider */}
                       <div className="col-span-2 sm:col-span-1 lg:col-span-2 xl:col-span-1">
@@ -536,16 +546,7 @@ const ProductBreakdown = ({
                           className={hasNameError ? inputErrorClass : inputClass}
                         />
                       </div>
-                      <div>
-                        <FieldLabel>Category {hasCategoryError && <span className="text-red-400 normal-case">*</span>}</FieldLabel>
-                        <input
-                          type="text"
-                          value={p.category}
-                          placeholder="e.g. Ring, Chain, Bangle"
-                          onChange={(e) => updateProduct(p.id, "category", e.target.value)}
-                          className={hasCategoryError ? inputErrorClass : inputClass}
-                        />
-                      </div>
+                      
 
                       {/* Gross Weight */}
                       <div>
